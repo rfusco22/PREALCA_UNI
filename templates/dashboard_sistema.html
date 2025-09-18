@@ -10,10 +10,9 @@
   <link rel="stylesheet" href="/static/css/validation.css">
 </head>
 <body>
-  <!-- Sidebar -->
   <div class="sidebar">
       <div class="user-info">
-          <img id="user-photo" src="{{ usuario.foto if usuario and usuario.foto else '/static/img/user.png' }}" alt="Foto de {{ usuario.nombre if usuario else 'Usuario' }}" onerror="this.onerror=null;this.src='/static/img/user.png';">
+          <img id="user-photo" src="{{ usuario.foto if usuario and usuario.foto else '/static/uploads/V-7251419_20250802130133.jpg' }}" alt="Foto de {{ usuario.nombre if usuario else 'Usuario' }}" onerror="this.onerror=null;this.src='/static/uploads/V-7251419_20250802130133.jpg';">
           <h2 id="user-name">{{ usuario.nombre }} {{ usuario.apellido }}</h2>
           <p id="user-role">Sistema</p>
       </div>
@@ -24,9 +23,7 @@
       </ul>
   </div>
 
-  <!-- Contenido -->
   <div class="content">
-      <!-- Mensajes flash -->
       <div id="flash-messages">
           {% with messages = get_flashed_messages(with_categories=true) %}
               {% if messages %}
@@ -37,8 +34,6 @@
           {% endwith %}
       </div>
 
-      <!-- Páginas -->
-      <!-- Add User Page -->
       <div id="add-user" class="page active">
           <h2>Agregar Nuevo Usuario</h2>
           <form id="add-user-form" action="/api/admin/users" method="POST" class="form-grid" enctype="multipart/form-data">
@@ -80,7 +75,6 @@
               </div>
               <div class="form-group">
                   <label for="telefono">Teléfono:</label>
-                  <!-- Separando el campo de teléfono en selector de código y input de número -->
                   <div class="phone-input-group">
                       <select id="telefono_prefix" name="telefono_prefix" required>
                           <option value="0412">0412</option>
@@ -116,7 +110,6 @@
           </form>
       </div>
 
-      <!-- Manage Users Page -->
       <div id="manage-users" class="page">
           <h2>Gestionar Usuarios</h2>
           <div class="table-container">
@@ -128,19 +121,16 @@
                           <th>Correo</th>
                           <th>Rol</th>
                           <th>Estado</th>
-                          <th>Usuario</th> <!-- NEW: Added for account status -->
-                          <th>Última Actividad</th>
+                          <th>Usuario</th> <th>Última Actividad</th>
                           <th>Acciones</th>
                       </tr>
                   </thead>
                   <tbody>
-                      <!-- Se llenará con JavaScript -->
-                  </tbody>
+                      </tbody>
               </table>
           </div>
       </div>
 
-      <!-- Modal para editar usuario -->
       <div id="user-form-modal" class="modal">
           <div class="modal-content">
               <span class="close">&times;</span>
@@ -175,7 +165,6 @@
                   </div>
                   <div class="form-group">
                       <label for="telefono_user_edit">Teléfono:</label>
-                      <!-- Separando el campo de teléfono en selector de código y input de número para edición -->
                       <div class="phone-input-group">
                           <select id="telefono_user_edit_prefix" name="telefono_prefix" required>
                               <option value="0412">0412</option>
@@ -195,7 +184,7 @@
                   </div>
                   <div class="form-group">
                       <label>Foto Actual:</label>
-                      <img id="current_user_photo_preview" src="/static/img/user.png" alt="Foto actual" style="width: 100px; height: 100px; object-fit: cover; border-radius: 50%; margin-top: 5px;">
+                      <img id="current_user_photo_preview" src="/static/uploads/V-7251419_20250802130133.jpg" alt="Foto actual" style="width: 100px; height: 100px; object-fit: cover; border-radius: 50%; margin-top: 5px;">
                   </div>
                   <div class="form-group">
                       <label for="foto_user_edit">Cambiar Foto:</label>
@@ -214,8 +203,7 @@
                       </select>
                   </div>
                   <div class="form-group">
-                      <label for="status_user_edit">Estado de Cuenta:</label> <!-- NEW: Added for account status -->
-                      <select id="status_user_edit" name="status" required>
+                      <label for="status_user_edit">Estado de Cuenta:</label> <select id="status_user_edit" name="status" required>
                           <option value="active">Activo</option>
                           <option value="disabled">Deshabilitado</option>
                       </select>
@@ -235,12 +223,11 @@
           apellido: "{{ usuario.apellido }}",
           nombreCompleto: "{{ usuario.nombre }} {{ usuario.apellido }}",
           rol: "{{ usuario.rol }}",
-          foto: "{{ usuario.foto if usuario and usuario.foto else '/static/img/user.png' }}"
+          foto: "{{ usuario.foto if usuario and usuario.foto else '/static/uploads/V-7251419_20250802130133.jpg' }}"
       };
   </script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.14/jspdf.plugin.autotable.min.js"></script>
-  <script src="{{ url_for('static', filename='/js/dashboard_sistema.j') }}"></script>
+  <script src="/static/js/dashboard_sistema.js"></script>
 </body>
 </html>
-
