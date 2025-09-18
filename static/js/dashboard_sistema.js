@@ -40,16 +40,16 @@ document.addEventListener("DOMContentLoaded", () => {
   const addUserFotoInput = document.getElementById("user_foto")
 
   // Input fields for Edit User Modal
-  const editUserNameInput = document.getElementById("nombre_user_edit")
-  const editUserApellidoInput = document.getElementById("apellido_user_edit")
-  const editUserDocPrefixInput = document.getElementById("documento_type_user_edit"); // ID CORREGIDO
-  const editUserDocNumberInput = document.getElementById("documento_number_user_edit"); // ID CORREGIDO
-  const editUserCorreoInput = document.getElementById("correo_user_edit")
-  const editUserDireccionInput = document.getElementById("direccion_user_edit") // NEW
-  const editUserTelefonoPrefixInput = document.getElementById("telefono_prefix_user_edit");
-  const editUserTelefonoNumberInput = document.getElementById("telefono_user_edit_number")
-  const editUserFotoInput = document.getElementById("foto_user_edit")
-  const editUserStatusInput = document.getElementById("status_user_edit") // NEW
+  const editUserNameInput = document.getElementById("nombre_user_edit");
+  const editUserApellidoInput = document.getElementById("apellido_user_edit");
+  const editUserDocPrefixInput = document.getElementById("documento_type_user_edit"); // ID corregido
+  const editUserDocNumberInput = document.getElementById("documento_number_user_edit"); // ID corregido
+  const editUserCorreoInput = document.getElementById("correo_user_edit");
+  const editUserDireccionInput = document.getElementById("direccion_user_edit");
+  const editUserTelefonoPrefixInput = document.getElementById("telefono_prefix_user_edit"); // ID CORREGIDO AHORA
+  const editUserTelefonoNumberInput = document.getElementById("telefono_number_user_edit");
+  const editUserFotoInput = document.getElementById("foto_user_edit");
+  const editUserStatusInput = document.getElementById("status_user_edit");
 
   // Function to show a specific section and hide others
   function showSection(sectionId) {
@@ -1079,6 +1079,7 @@ document.addEventListener("DOMContentLoaded", () => {
     5 * 60 * 1000,
   ) // Every 5 minutes
 })
+
 
 
 
