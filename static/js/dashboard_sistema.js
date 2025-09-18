@@ -46,7 +46,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const editUserDocNumberInput = document.getElementById("documento_number_user_edit"); // ID CORREGIDO
   const editUserCorreoInput = document.getElementById("correo_user_edit")
   const editUserDireccionInput = document.getElementById("direccion_user_edit") // NEW
-  const editUserTelefonoPrefixInput = document.getElementById("telefono_user_edit_prefix")
+  const editUserTelefonoPrefixInput = document.getElementById("telefono_prefix_user_edit");
   const editUserTelefonoNumberInput = document.getElementById("telefono_user_edit_number")
   const editUserFotoInput = document.getElementById("foto_user_edit")
   const editUserStatusInput = document.getElementById("status_user_edit") // NEW
@@ -688,8 +688,6 @@ document.addEventListener("DOMContentLoaded", () => {
   // Load users when the manage-users section is activated
   document.querySelector('a[data-page="manage-users"]').addEventListener("click", loadUsers)
 
-  // CÓDIGO NUEVO (CORRECTO)
-  // --- Reemplaza tu función editUser completa con esta ---
   function editUser(userId) {
     fetch(`/api/admin/users/${userId}`)
       .then((response) => response.json())
@@ -1081,6 +1079,7 @@ document.addEventListener("DOMContentLoaded", () => {
     5 * 60 * 1000,
   ) // Every 5 minutes
 })
+
 
 
 
