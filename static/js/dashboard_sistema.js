@@ -688,6 +688,7 @@ document.addEventListener("DOMContentLoaded", () => {
   // Load users when the manage-users section is activated
   document.querySelector('a[data-page="manage-users"]').addEventListener("click", loadUsers)
 
+  // REEMPLAZA TU FUNCIÓN editUser() COMPLETA CON ESTA VERSIÓN
   function editUser(userId) {
     fetch(`/api/admin/users/${userId}`)
       .then((response) => response.json())
@@ -707,7 +708,7 @@ document.addEventListener("DOMContentLoaded", () => {
           if (editUserDocPrefixInput) editUserDocPrefixInput.value = cedulaParts[0];
           if (editUserDocNumberInput) editUserDocNumberInput.value = cedulaParts[1];
         } else {
-          if (editUserDocPrefixInput) editUserDocPrefixInput.value = "V"; // Valor por defecto
+          if (editUserDocPrefixInput) editUserDocPrefixInput.value = "V";
           if (editUserDocNumberInput) editUserDocNumberInput.value = user.cedula || ""; 
         }
   
@@ -724,7 +725,7 @@ document.addEventListener("DOMContentLoaded", () => {
             if (editUserTelefonoNumberInput) editUserTelefonoNumberInput.value = number;
           }
         } else {
-          if (editUserTelefonoPrefixInput) editUserTelefonoPrefixInput.value = "0412"; // Valor por defecto
+          if (editUserTelefonoPrefixInput) editUserTelefonoPrefixInput.value = "0412";
           if (editUserTelefonoNumberInput) editUserTelefonoNumberInput.value = "";
         }
   
@@ -1079,6 +1080,7 @@ document.addEventListener("DOMContentLoaded", () => {
     5 * 60 * 1000,
   ) // Every 5 minutes
 })
+
 
 
 
