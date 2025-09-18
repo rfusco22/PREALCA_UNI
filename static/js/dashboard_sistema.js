@@ -688,62 +688,65 @@ document.addEventListener("DOMContentLoaded", () => {
   // Load users when the manage-users section is activated
   document.querySelector('a[data-page="manage-users"]').addEventListener("click", loadUsers)
 
-  // Edit User Function
+  // CÓDIGO NUEVO (CORRECTO)
   function editUser(userId) {
     fetch(`/api/admin/users/${userId}`)
       .then((response) => response.json())
       .then((user) => {
         if (user.success === false) {
-          displayFlashMessage("Error: " + user.message, "error")
-          return
+          displayFlashMessage("Error: " + user.message, "error");
+          return;
         }
-        userModalTitle.textContent = "Editar Usuario"
-        userIdInput.value = user.id
-        editUserNameInput.value = user.nombre
-        editUserApellidoInput.value = user.apellido
-
-        // Split cedula into prefix and number for edit form
-        const cedulaParts = user.cedula.split("-")
-        if (cedulaParts.length === 2) {
-          editUserDocPrefixInput.value = cedulaParts[0]
-          editUserDocNumberInput.value = cedulaParts[1]
+        userModalTitle.textContent = "Editar Usuario";
+        userIdInput.value = user.id;
+        editUserNameInput.value = user.nombre;
+        editUserApellidoInput.value = user.apellido;
+  
+        // VERIFICACIÓN AÑADIDA para la cédula
+        if (user.cedula && user.cedula.includes("-")) {
+          const cedulaParts = user.cedula.split("-");
+          editUserDocPrefixInput.value = cedulaParts[0];
+          editUserDocNumberInput.value = cedulaParts[1];
         } else {
-          editUserDocPrefixInput.value = "V" // Default
-          editUserDocNumberInput.value = user.cedula // Fallback
+          editUserDocPrefixInput.value = "V"; // Valor por defecto
+          editUserDocNumberInput.value = user.cedula || ""; // Usar cédula o vacío si es nulo
         }
-
-        editUserCorreoInput.value = user.correo
-        editUserDireccionInput.value = user.direccion || "" // NEW: Populate direccion
-
-        // Split telefono into prefix and number for edit form
+  
+        editUserCorreoInput.value = user.correo;
+        editUserDireccionInput.value = user.direccion || "";
+  
+        // VERIFICACIÓN AÑADIDA para el teléfono
         if (user.telefono) {
-          const phoneStr = user.telefono.toString()
+          const phoneStr = user.telefono.toString();
           if (phoneStr.length === 11) {
-            const prefix = phoneStr.substring(0, 4)
-            const number = phoneStr.substring(4)
-            editUserTelefonoPrefixInput.value = prefix
-            editUserTelefonoNumberInput.value = number
+            const prefix = phoneStr.substring(0, 4);
+            const number = phoneStr.substring(4);
+            editUserTelefonoPrefixInput.value = prefix;
+            editUserTelefonoNumberInput.value = number;
           }
-        }
-
-        document.getElementById("rol_user_edit").value = user.rol
-        editUserStatusInput.value = user.status // NEW: Populate status
-
-        // Display current photo
-        if (user.foto) {
-          currentFotoPreview.src = user.foto
-          currentFotoPreview.style.display = "block"
         } else {
-          currentFotoPreview.src = ""
-          currentFotoPreview.style.display = "none"
+          // Limpiar campos si el teléfono es nulo
+          editUserTelefonoPrefixInput.value = "0412"; // Valor por defecto
+          editUserTelefonoNumberInput.value = "";
         }
-
-        userModal.style.display = "block"
+  
+        document.getElementById("rol_user_edit").value = user.rol;
+        editUserStatusInput.value = user.status;
+  
+        if (user.foto) {
+          currentFotoPreview.src = user.foto;
+          currentFotoPreview.style.display = "block";
+        } else {
+          currentFotoPreview.src = "";
+          currentFotoPreview.style.display = "none";
+        }
+  
+        userModal.style.display = "block";
       })
       .catch((error) => {
-        console.error("Error fetching user for edit:", error)
-        displayFlashMessage("Error al cargar datos del usuario para edición.", "error")
-      })
+        console.error("Error fetching user for edit:", error);
+        displayFlashMessage("Error al cargar datos del usuario para edición.", "error"); 
+      });
   }
 
   // Handle Edit User Form Submission
@@ -1078,4 +1081,5 @@ document.addEventListener("DOMContentLoaded", () => {
     5 * 60 * 1000,
   ) // Every 5 minutes
 })
+
 
