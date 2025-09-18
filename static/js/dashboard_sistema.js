@@ -42,8 +42,8 @@ document.addEventListener("DOMContentLoaded", () => {
   // Input fields for Edit User Modal
   const editUserNameInput = document.getElementById("nombre_user_edit")
   const editUserApellidoInput = document.getElementById("apellido_user_edit")
-  const editUserDocPrefixInput = document.getElementById("documento_user_edit_prefix")
-  const editUserDocNumberInput = document.getElementById("documento_user_edit_number")
+  const editUserDocPrefixInput = document.getElementById("documento_type_user_edit"); // ID CORREGIDO
+  const editUserDocNumberInput = document.getElementById("documento_number_user_edit"); // ID CORREGIDO
   const editUserCorreoInput = document.getElementById("correo_user_edit")
   const editUserDireccionInput = document.getElementById("direccion_user_edit") // NEW
   const editUserTelefonoPrefixInput = document.getElementById("telefono_user_edit_prefix")
@@ -689,6 +689,7 @@ document.addEventListener("DOMContentLoaded", () => {
   document.querySelector('a[data-page="manage-users"]').addEventListener("click", loadUsers)
 
   // CÓDIGO NUEVO (CORRECTO)
+  // --- Reemplaza tu función editUser completa con esta ---
   function editUser(userId) {
     fetch(`/api/admin/users/${userId}`)
       .then((response) => response.json())
@@ -702,32 +703,31 @@ document.addEventListener("DOMContentLoaded", () => {
         editUserNameInput.value = user.nombre;
         editUserApellidoInput.value = user.apellido;
   
-        // VERIFICACIÓN AÑADIDA para la cédula
+        // Verificación robusta para la cédula (maneja datos nulos)
         if (user.cedula && user.cedula.includes("-")) {
           const cedulaParts = user.cedula.split("-");
-          editUserDocPrefixInput.value = cedulaParts[0];
-          editUserDocNumberInput.value = cedulaParts[1];
+          if (editUserDocPrefixInput) editUserDocPrefixInput.value = cedulaParts[0];
+          if (editUserDocNumberInput) editUserDocNumberInput.value = cedulaParts[1];
         } else {
-          editUserDocPrefixInput.value = "V"; // Valor por defecto
-          editUserDocNumberInput.value = user.cedula || ""; // Usar cédula o vacío si es nulo
+          if (editUserDocPrefixInput) editUserDocPrefixInput.value = "V"; // Valor por defecto
+          if (editUserDocNumberInput) editUserDocNumberInput.value = user.cedula || ""; 
         }
   
         editUserCorreoInput.value = user.correo;
         editUserDireccionInput.value = user.direccion || "";
   
-        // VERIFICACIÓN AÑADIDA para el teléfono
+        // Verificación robusta para el teléfono (maneja datos nulos)
         if (user.telefono) {
           const phoneStr = user.telefono.toString();
           if (phoneStr.length === 11) {
             const prefix = phoneStr.substring(0, 4);
             const number = phoneStr.substring(4);
-            editUserTelefonoPrefixInput.value = prefix;
-            editUserTelefonoNumberInput.value = number;
+            if (editUserTelefonoPrefixInput) editUserTelefonoPrefixInput.value = prefix;
+            if (editUserTelefonoNumberInput) editUserTelefonoNumberInput.value = number;
           }
         } else {
-          // Limpiar campos si el teléfono es nulo
-          editUserTelefonoPrefixInput.value = "0412"; // Valor por defecto
-          editUserTelefonoNumberInput.value = "";
+          if (editUserTelefonoPrefixInput) editUserTelefonoPrefixInput.value = "0412"; // Valor por defecto
+          if (editUserTelefonoNumberInput) editUserTelefonoNumberInput.value = "";
         }
   
         document.getElementById("rol_user_edit").value = user.rol;
@@ -1081,5 +1081,6 @@ document.addEventListener("DOMContentLoaded", () => {
     5 * 60 * 1000,
   ) // Every 5 minutes
 })
+
 
 
