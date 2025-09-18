@@ -103,7 +103,7 @@ document.addEventListener("DOMContentLoaded", () => {
           row.insertCell().textContent = user.last_active_display
 
           const actionsCell = row.insertCell()
-          if (user.id === 1) {
+          if (user.id == 1) {
             const editBtn = document.createElement("button")
             editBtn.innerHTML = '<i class="fas fa-edit"></i>'
             editBtn.classList.add("btn", "action-btn")
@@ -1078,3 +1078,4 @@ document.addEventListener("DOMContentLoaded", () => {
     5 * 60 * 1000,
   ) // Every 5 minutes
 })
+
