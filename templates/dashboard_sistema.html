@@ -24,15 +24,7 @@
   </div>
 
   <div class="content">
-      <div id="flash-messages">
-          {% with messages = get_flashed_messages(with_categories=true) %}
-              {% if messages %}
-                  {% for category, message in messages %}
-                      <div class="alert alert-{{ category }}">{{ message }}</div>
-                  {% endfor %}
-              {% endif %}
-          {% endwith %}
-      </div>
+      <div id="flash-messages"></div>
 
       <div id="add-user" class="page active">
           <h2>Agregar Nuevo Usuario</h2>
@@ -74,7 +66,7 @@
                   <div id="user_contrasena_validation_message" class="field-validation-message"></div>
               </div>
               <div class="form-group">
-                  <label for="telefono">Teléfono:</label>
+                  <label for="telefono_prefix">Teléfono:</label>
                   <div class="phone-input-group">
                       <select id="telefono_prefix" name="telefono_prefix" required>
                           <option value="0412">0412</option>
@@ -121,7 +113,8 @@
                           <th>Correo</th>
                           <th>Rol</th>
                           <th>Estado</th>
-                          <th>Usuario</th> <th>Última Actividad</th>
+                          <th>Usuario</th> 
+                          <th>Última Actividad</th>
                           <th>Acciones</th>
                       </tr>
                   </thead>
@@ -148,13 +141,13 @@
                       <div id="apellido_user_edit_validation_message" class="field-validation-message"></div>
                   </div>
                   <div class="form-group">
-                      <label for="documento_user_edit_prefix">Documento:</label>
+                      <label for="documento_type_user_edit">Documento:</label>
                       <div class="document-input-group">
-                          <select id="documento_user_edit_prefix" name="documento_type" required>
+                          <select id="documento_type_user_edit" name="documento_type" required>
                               <option value="V">V</option>
                               <option value="E">E</option>
                           </select>
-                          <input type="text" id="documento_user_edit_number" name="documento_number" placeholder="Número de documento (ej. 12345678)" required pattern="\d{7,8}">
+                          <input type="text" id="documento_number_user_edit" name="documento_number" placeholder="Número de documento (ej. 12345678)" required pattern="\d{7,8}">
                       </div>
                       <div id="documento_user_edit_validation_message" class="field-validation-message"></div>
                   </div>
@@ -164,16 +157,16 @@
                       <div id="correo_user_edit_validation_message" class="field-validation-message"></div>
                   </div>
                   <div class="form-group">
-                      <label for="telefono_user_edit">Teléfono:</label>
+                      <label for="telefono_prefix_user_edit">Teléfono:</label>
                       <div class="phone-input-group">
-                          <select id="telefono_user_edit_prefix" name="telefono_prefix" required>
+                          <select id="telefono_prefix_user_edit" name="telefono_prefix" required>
                               <option value="0412">0412</option>
                               <option value="0422">0422</option>
                               <option value="0426">0426</option>
                               <option value="0414">0414</option>
                               <option value="0424">0424</option>
                           </select>
-                          <input type="tel" id="telefono_user_edit_number" name="telefono_number" placeholder="1234567" required pattern="[0-9]{7}" maxlength="7">
+                          <input type="tel" id="telefono_number_user_edit" name="telefono_number" placeholder="1234567" required pattern="[0-9]{7}" maxlength="7">
                       </div>
                       <div id="telefono_user_edit_validation_message" class="field-validation-message"></div>
                   </div>
@@ -203,7 +196,8 @@
                       </select>
                   </div>
                   <div class="form-group">
-                      <label for="status_user_edit">Estado de Cuenta:</label> <select id="status_user_edit" name="status" required>
+                      <label for="status_user_edit">Estado de Cuenta:</label>
+                      <select id="status_user_edit" name="status" required>
                           <option value="active">Activo</option>
                           <option value="disabled">Deshabilitado</option>
                       </select>
