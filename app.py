@@ -602,7 +602,7 @@ def get_concrete_designs():
 
 @app.route('/api/concrete_designs', methods=['POST'])
 def add_concrete_design():
- if session.get('user_role') not in ['control_calidad']: # Removed 'gerencia'
+ if session.get('user_role') not in ['control_calidad', 'vendedor', 'administrador', 'gerencia']: # Removed 'gerencia'
   return jsonify({'success': False, 'message': 'Acceso denegado'}), 403
 
  data = request.json
@@ -674,7 +674,7 @@ def get_concrete_design_by_id(design_id):
 
 @app.route('/api/concrete_designs/<int:design_id>', methods=['PUT'])
 def update_concrete_design(design_id):
- if session.get('user_role') not in ['control_calidad']: # Removed 'gerencia'
+ if session.get('user_role') not in ['control_calidad', 'vendedor', 'administrador', 'gerencia']: # Removed 'gerencia'
   return jsonify({'success': False, 'message': 'Acceso denegado'}), 403
 
  data = request.json
@@ -728,7 +728,7 @@ def update_concrete_design(design_id):
 
 @app.route('/api/concrete_designs/delete/<int:design_id>', methods=['POST'])
 def delete_concrete_design(design_id):
- if session.get('user_role') not in ['control_calidad']: # Removed 'gerencia'
+ if session.get('user_role') not in ['control_calidad', 'vendedor', 'administrador', 'gerencia']: # Removed 'gerencia'
   return jsonify({'success': False, 'message': 'Acceso denegado'}), 403
 
  connection = get_db_connection()
