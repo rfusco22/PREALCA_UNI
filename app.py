@@ -2615,38 +2615,55 @@ def get_despacho_by_id(dispatch_id):
     FROM despachos d
     LEFT JOIN clientes c ON d.cliente_id = c.id
     LEFT JOIN choferes ch ON d.chofer_id = ch.id
-    LEFT JOIN vendedores v ON d.vendedor_id = c.id
+    LEFT JOIN vendedores v ON d.vendedor_id = v.id
     LEFT JOIN concrete_designs cd ON d.concrete_design_id = cd.id
     LEFT JOIN camiones cmn ON d.camion_id = cmn.id
     WHERE d.id = %s
    """
    cursor.execute(sql, (dispatch_id,))
    despacho = cursor.fetchone()
-   
+
   if despacho:
-   if isinstance(despacho['fecha'], (datetime, date)):
-    despacho['fecha'] = despacho['fecha'].strftime('%d/%m/%Y') # Changed format
-   
-   if isinstance(despacho.get('hora_salida'), timedelta):
-    total_seconds = int(despacho['hora_salida'].total_seconds())
-    hours, remainder = divmod(total_seconds, 3600)
-    minutes, seconds = divmod(remainder, 60)
-    despacho['hora_salida'] = f"{hours:02}:{minutes:02}:{seconds:02}"
-   elif despacho.get('hora_salida') is None:
-    despacho['hora_salida'] = "N/A"
+    # Formatear hora_salida
+    hora_salida_str = "N/A"
+    if isinstance(despacho.get('hora_salida'), timedelta):
+        total_seconds = int(despacho['hora_salida'].total_seconds())
+        hours, remainder = divmod(total_seconds, 3600)
+        minutes, _ = divmod(remainder, 60)
+        hora_salida_str = f"{hours:02}:{minutes:02}"
 
-   if isinstance(despacho.get('hora_llegada'), timedelta):
-    total_seconds = int(despacho['hora_llegada'].total_seconds())
-    hours, remainder = divmod(remainder, 3600)
-    minutes, seconds = divmod(remainder, 60)
-    despacho['hora_llegada'] = f"{hours:02}:{minutes:02}:{seconds:02}"
-   elif despacho.get('hora_llegada') is None:
-    despacho['hora_llegada'] = "N/A"
+    # Formatear hora_llegada
+    hora_llegada_str = "N/A"
+    if isinstance(despacho.get('hora_llegada'), timedelta):
+        total_seconds = int(despacho['hora_llegada'].total_seconds())
+        hours, remainder = divmod(total_seconds, 3600)
+        minutes, _ = divmod(remainder, 60)
+        hora_llegada_str = f"{hours:02}:{minutes:02}"
 
-   despacho['cliente_contacto'] = despacho.get('cliente_nombre')
-   despacho['cliente_phone'] = despacho.get('cliente_telefono')
-
-   return jsonify(despacho)
+    despacho_serializable = {
+        'id': despacho['id'],
+        'fecha': despacho['fecha'].strftime('%d/%m/%Y') if isinstance(despacho['fecha'], (datetime, date)) else despacho['fecha'],
+        'guia': despacho['guia'],
+        'm3': float(despacho['m3']) if despacho['m3'] is not None else 0.0,
+        'cliente_nombre': despacho['cliente_nombre'],
+        'cliente_direccion': despacho['cliente_direccion'],
+        'cliente_telefono': despacho['cliente_telefono'],
+        'cliente_documento': despacho['cliente_documento'],
+        'chofer_nombre': despacho['chofer_nombre'],
+        'chofer_cedula': despacho['chofer_cedula'],
+        'vendedor_nombre': despacho['vendedor_nombre'],
+        'vendedor_cedula': despacho['vendedor_cedula'],
+        'diseno_nombre': despacho['diseno_nombre'],
+        'diseno_resistencia': despacho['diseno_resistencia'],
+        'diseno_asentamiento': despacho['diseno_asentamiento'],
+        'camion_placa': despacho['camion_placa'],
+        'camion_modelo': despacho['camion_modelo'],
+        'status': despacho['status'],
+        'hora_salida': hora_salida_str,
+        'hora_llegada': hora_llegada_str,
+        'received_by': despacho['received_by']
+    }
+    return jsonify(despacho_serializable)
   else:
    return jsonify({"error": "Despacho no encontrado"}), 404
  except Exception as e:
