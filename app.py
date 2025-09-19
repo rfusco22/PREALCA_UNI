@@ -1086,12 +1086,22 @@ def admin_add_user():
  contrasena = request.form.get('contrasena')
  rol = request.form.get('rol')
  direccion = request.form.get('direccion')
- telefono = request.form.get('telefono')
+ 
+ telefono_prefix = request.form.get('telefono_prefix')
+ telefono_number = request.form.get('telefono_number')
+ telefono = request.form.get('telefono')  # Keep for backward compatibility
+ 
+ # If separate fields are provided, combine them
+ if telefono_prefix and telefono_number:
+     telefono = f"{telefono_prefix}{telefono_number}"
+ elif not telefono:
+     # If no combined telefono and no separate fields, it's missing
+     telefono = None
 
  # Basic validation
  if not all([nombre, apellido, documento_type, documento_number, correo, contrasena, rol, direccion, telefono]):
 
-  missing_fields = [f for f in ['nombre', 'apellido', 'documento_type', 'documento_number', 'correo', 'contrasena', 'rol', 'direccion', 'telefono'] if not request.form.get(f)]
+  missing_fields = [f for f in ['nombre', 'apellido', 'documento_type', 'documento_number', 'correo', 'contrasena', 'rol', 'direccion', 'telefono'] if not request.form.get(f) and not (telefono_prefix and telefono_number)]
   return jsonify({'success': False, 'message': 'Todos los campos son obligatorios'}), 400
 
  # Validate fields
@@ -1763,6 +1773,14 @@ def handle_exception(e):
         }), 500
     # For non-API routes, return HTML error page
     return render_template('error.html', error="Error interno del servidor"), 500
+
+@app.errorhandler(500)
+def handle_internal_error(error):
+    """Global handler for 500 errors to ensure JSON response"""
+    return jsonify({
+        'success': False, 
+        'message': 'Error interno del servidor. Por favor, contacte al administrador.'
+    }), 500
 
 @app.errorhandler(500)
 def internal_server_error(e):
@@ -3037,6 +3055,14 @@ def get_alertas_inventario():
  return jsonify(alertas_disenos)
 
 # NEW: Function to generate expiration alerts (returns list)
+@app.route('/api/alertas/vencimientos', methods=['GET'])
+def get_alertas_vencimientos():
+ try:
+  alertas = generar_alertas_vencimientos()
+  return jsonify(alertas)
+ except Exception as e:
+  return jsonify({'error': str(e)}), 500
+
 def generar_alertas_vencimientos():
   hoy = datetime.now().date()
   limite = hoy + timedelta(days=90)
@@ -3079,15 +3105,6 @@ def generar_alertas_vencimientos():
     return []
   finally:
     connection.close()
-
-# API para alertas de vencimientos (calls helper function)
-@app.route('/api/alertas/vencimientos', methods=['GET'])
-def get_alertas_vencimientos():
- try:
-  alertas = generar_alertas_vencimientos()
-  return jsonify(alertas)
- except Exception as e:
-  return jsonify({'error': str(e)}), 500
 
 def generar_alertas_mantenimiento():
     hoy = datetime.now().date()
