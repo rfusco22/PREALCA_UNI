@@ -1412,7 +1412,7 @@ def admin_update_user(id):
 # MODIFIED: Renamed from admin_delete_user to admin_disable_user
 @app.route('/api/admin/users/disable/<int:id>', methods=['POST'])
 def admin_disable_user(id):
-    if session.get('user_role') not in ['sistema']: # Removed 'gerencia'
+    if session.get('user_role') not in ['sistema']:
         return jsonify({'success': False, 'message': 'Acceso denegado'}), 403
 
     if id == 1:
@@ -1421,6 +1421,9 @@ def admin_disable_user(id):
     connection = get_db_connection()
     try:
         with connection.cursor() as cursor:
+            if session.get('user_id') == id:
+                return jsonify({'success': False, 'message': 'No puedes deshabilitar tu propia cuenta.'}), 400
+
             # Primero obtener información del usuario a deshabilitar
             sql_get_user = "SELECT rol, cedula, nombre, apellido FROM usuarios WHERE id = %s"
             cursor.execute(sql_get_user, (id,))
@@ -1503,7 +1506,7 @@ def admin_disable_user(id):
 # NEW: API to enable a user
 @app.route('/api/admin/users/enable/<int:id>', methods=['POST'])
 def admin_enable_user(id):
-    if session.get('user_role') not in ['sistema']: # Removed 'gerencia'
+    if session.get('user_role') not in ['sistema']:
         return jsonify({'success': False, 'message': 'Acceso denegado'}), 403
 
     connection = get_db_connection()
@@ -1597,7 +1600,7 @@ def admin_enable_user(id):
         return jsonify({'success': False, 'message': f'Error al habilitar usuario: {str(e)}'}), 500
     finally:
         connection.close()
-
+        
 # NEW API: Get Vendedor ID for logged-in user
 @app.route('/api/get_vendedor_info_by_user_id', methods=['GET'])
 def get_vendedor_info_by_user_id():
