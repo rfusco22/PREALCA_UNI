@@ -1413,223 +1413,135 @@ def admin_update_user(id):
 @app.route('/api/admin/users/disable/<int:id>', methods=['POST'])
 def admin_disable_user(id):
     if session.get('user_role') not in ['sistema']:
-        print("DEBUG: Acceso denegado. Rol:", session.get('user_role'))
         return jsonify({'success': False, 'message': 'Acceso denegado'}), 403
 
     if id == 1:
-        print("DEBUG: Intentando deshabilitar el Vendedor Interno (ID 1), acción denegada.")
         return jsonify({'success': False, 'message': 'No se puede deshabilitar al Usuario Vendedor Interno de Prealca (ID: 1). Este usuario debe permanecer siempre activo.'}), 400
 
     connection = get_db_connection()
     try:
         with connection.cursor() as cursor:
             if session.get('user_id') == id:
-                print("DEBUG: El usuario intentó deshabilitar su propia cuenta.")
                 return jsonify({'success': False, 'message': 'No puedes deshabilitar tu propia cuenta.'}), 400
 
-            # Primero obtener información del usuario a deshabilitar
-            print(f"DEBUG: Buscando información del usuario a deshabilitar (ID: {id})")
+            # Primero, obtener la cédula y el rol del usuario a deshabilitar
             sql_get_user = "SELECT rol, cedula, nombre, apellido FROM usuarios WHERE id = %s"
             cursor.execute(sql_get_user, (id,))
             user_to_disable = cursor.fetchone()
             
             if not user_to_disable:
-                print(f"DEBUG: Usuario con ID {id} no encontrado.")
                 return jsonify({'success': False, 'message': 'Usuario no encontrado'}), 404
             
             client_count = 0
+            message = 'Usuario deshabilitado exitosamente'
+
             if user_to_disable['rol'] == 'vendedor':
-                print("DEBUG: El usuario a deshabilitar es un Vendedor.")
-                # Obtener el vendedor_id del usuario a deshabilitar
+                # Obtener el ID del vendedor correspondiente al usuario
                 sql_get_vendedor_id = "SELECT id FROM vendedores WHERE cedula = %s"
                 cursor.execute(sql_get_vendedor_id, (user_to_disable['cedula'],))
                 vendedor_to_disable = cursor.fetchone()
-                
+
                 if vendedor_to_disable:
                     vendedor_id_to_disable = vendedor_to_disable['id']
-                    print(f"DEBUG: Vendedor ID a deshabilitar: {vendedor_id_to_disable}")
                     
-                    # Obtener el vendedor_id del usuario ID 1 (Usuario Vendedor Interno)
-                    sql_get_internal_user = "SELECT cedula FROM usuarios WHERE id = 1"
-                    cursor.execute(sql_get_internal_user)
-                    internal_user = cursor.fetchone()
-                    
-                    if internal_user:
-                        sql_get_internal_vendedor = "SELECT id FROM vendedores WHERE cedula = %s"
-                        cursor.execute(sql_get_internal_vendedor, (internal_user['cedula'],))
-                        internal_vendedor = cursor.fetchone()
-                        
-                        if internal_vendedor:
-                            internal_vendedor_id = internal_vendedor['id']
-                            print(f"DEBUG: Vendedor Interno ID: {internal_vendedor_id}")
-                            
-                            # Obtener los clientes específicos que serán transferidos
-                            print(f"DEBUG: Obteniendo clientes del vendedor {vendedor_id_to_disable}.")
-                            sql_get_clients = "SELECT id FROM clientes WHERE vendedor_id = %s"
-                            cursor.execute(sql_get_clients, (vendedor_id_to_disable,))
-                            clients_to_transfer = cursor.fetchall()
-                            
-                            if clients_to_transfer:
-                                client_count = len(clients_to_transfer)
-                                print(f"DEBUG: Se encontraron {client_count} clientes para transferir.")
-                                
-                                # Crear registro de transferencia temporal
-                                sql_create_transfer_record = """
-                                    INSERT INTO transferencias_temporales (usuario_original_id, vendedor_original_id, usuario_temporal_id, vendedor_temporal_id, fecha_transferencia, motivo)
-                                    VALUES (%s, %s, 1, %s, NOW(), 'Usuario deshabilitado')
-                                """
-                                cursor.execute(sql_create_transfer_record, (id, vendedor_id_to_disable, internal_vendedor_id))
-                                transfer_id = cursor.lastrowid
-                                print(f"DEBUG: Registro de transferencia temporal creado con ID: {transfer_id}")
-                                
-                                # Registrar cada cliente transferido en la tabla de detalle
-                                for client in clients_to_transfer:
-                                    sql_insert_detail = """
-                                        INSERT INTO transferencias_temporales_detalle (transferencia_id, cliente_id, fecha_transferencia)
-                                        VALUES (%s, %s, NOW())
-                                    """
-                                    cursor.execute(sql_insert_detail, (transfer_id, client['id']))
-                                print("DEBUG: Detalles de clientes transferidos guardados.")
-                                
-                                # Transferir clientes al vendedor interno (ID 1)
-                                print(f"DEBUG: Iniciando transferencia de clientes a vendedor ID {internal_vendedor_id}.")
-                                sql_transfer_clients = "UPDATE clientes SET vendedor_id = %s WHERE vendedor_id = %s"
-                                cursor.execute(sql_transfer_clients, (internal_vendedor_id, vendedor_id_to_disable))
-                                
-                                print(f"DEBUG: Transferidos {client_count} clientes específicos del vendedor {user_to_disable['nombre']} {user_to_disable['apellido']} al Usuario Vendedor Interno")
+                    # Obtener el ID del vendedor interno (ID 1)
+                    sql_get_internal_vendedor = "SELECT id FROM vendedores WHERE cedula = (SELECT cedula FROM usuarios WHERE id = 1)"
+                    cursor.execute(sql_get_internal_vendedor)
+                    internal_vendedor = cursor.fetchone()
 
-            # MODIFIED: Update status to 'disabled' instead of deleting
-            sql = "UPDATE usuarios SET status = 'disabled' WHERE id = %s"
-            cursor.execute(sql, (id,))
-            connection.commit()
-            print(f"DEBUG: Estado del usuario {id} actualizado a 'disabled'.")
+                    if internal_vendedor:
+                        internal_vendedor_id = internal_vendedor['id']
+                        
+                        # Contar los clientes a transferir
+                        sql_count_clients = "SELECT COUNT(*) as count FROM clientes WHERE vendedor_id = %s"
+                        cursor.execute(sql_count_clients, (vendedor_id_to_disable,))
+                        client_data = cursor.fetchone()
+                        client_count = client_data['count'] if client_data else 0
+
+                        if client_count > 0:
+                            # Transferir los clientes al vendedor interno
+                            sql_transfer_clients = "UPDATE clientes SET vendedor_id = %s WHERE vendedor_id = %s"
+                            cursor.execute(sql_transfer_clients, (internal_vendedor_id, vendedor_id_to_disable))
+
+                            # Actualizar el mensaje de éxito
+                            message = f'Usuario deshabilitado exitosamente. Se transfirieron {client_count} clientes temporalmente al Usuario Vendedor Interno.'
             
-            # Mensaje personalizado para vendedores
-            if user_to_disable['rol'] == 'vendedor' and client_count > 0:
-                message = f'Usuario deshabilitado exitosamente. Se transfirieron {client_count} clientes temporalmente al Usuario Vendedor Interno.'
-            else:
-                message = 'Usuario deshabilitado exitosamente'
+            # Actualizar el estado del usuario a 'disabled'
+            sql_update_status = "UPDATE usuarios SET status = 'disabled' WHERE id = %s"
+            cursor.execute(sql_update_status, (id,))
+            connection.commit()
                 
         return jsonify({'success': True, 'message': message})
     except Exception as e:
         connection.rollback()
-        print(f"ERROR: Fallo al deshabilitar usuario: {str(e)}")
+        print(f"Error al deshabilitar usuario: {str(e)}")
         return jsonify({'success': False, 'message': f'Error al deshabilitar usuario: {str(e)}'}), 500
     finally:
         connection.close()
-        print("DEBUG: Conexión a la base de datos cerrada.")
-
 
 # NEW: API to enable a user
 @app.route('/api/admin/users/enable/<int:id>', methods=['POST'])
 def admin_enable_user(id):
     if session.get('user_role') not in ['sistema']:
-        print("DEBUG: Acceso denegado para habilitar usuario. Rol:", session.get('user_role'))
         return jsonify({'success': False, 'message': 'Acceso denegado'}), 403
 
     connection = get_db_connection()
     try:
         with connection.cursor() as cursor:
-            # Obtener información del usuario a habilitar
-            print(f"DEBUG: Buscando información del usuario a habilitar (ID: {id})")
+            # Primero, obtener la cédula y el rol del usuario a habilitar
             sql_get_user = "SELECT rol, cedula, nombre, apellido FROM usuarios WHERE id = %s"
             cursor.execute(sql_get_user, (id,))
             user_to_enable = cursor.fetchone()
             
             if not user_to_enable:
-                print(f"DEBUG: Usuario con ID {id} no encontrado.")
                 return jsonify({'success': False, 'message': 'Usuario no encontrado'}), 404
             
             client_count = 0
+            message = 'Usuario habilitado exitosamente'
+
             if user_to_enable['rol'] == 'vendedor':
-                print("DEBUG: El usuario a habilitar es un Vendedor.")
-                # Obtener el vendedor_id del usuario a habilitar
+                # Obtener el ID del vendedor correspondiente al usuario
                 sql_get_vendedor_id = "SELECT id FROM vendedores WHERE cedula = %s"
                 cursor.execute(sql_get_vendedor_id, (user_to_enable['cedula'],))
                 vendedor_to_enable = cursor.fetchone()
-                
+
                 if vendedor_to_enable:
                     vendedor_id_to_enable = vendedor_to_enable['id']
-                    print(f"DEBUG: Vendedor ID a habilitar: {vendedor_id_to_enable}")
                     
-                    # Buscar transferencias temporales específicas para este vendedor
-                    print(f"DEBUG: Buscando transferencias pendientes para usuario {id}.")
-                    sql_get_transfers = """
-                        SELECT id, vendedor_temporal_id 
-                        FROM transferencias_temporales 
-                        WHERE usuario_original_id = %s 
-                        AND vendedor_original_id = %s 
-                        AND fecha_restauracion IS NULL
-                    """
-                    cursor.execute(sql_get_transfers, (id, vendedor_id_to_enable))
-                    transfers = cursor.fetchall()
-                    
-                    if transfers:
-                        print(f"DEBUG: Se encontraron {len(transfers)} transferencias pendientes.")
-                        for transfer in transfers:
-                            transfer_id = transfer['id']
-                            vendedor_temporal_id = transfer['vendedor_temporal_id']
-                            
-                            # Obtener los IDs específicos de los clientes que fueron transferidos
-                            print(f"DEBUG: Obteniendo IDs de clientes de la transferencia {transfer_id}.")
-                            sql_get_transferred_clients = """
-                                SELECT cliente_id FROM transferencias_temporales_detalle 
-                                WHERE transferencia_id = %s
-                            """
-                            cursor.execute(sql_get_transferred_clients, (transfer_id,))
-                            transferred_clients = cursor.fetchall()
-                            
-                            if transferred_clients:
-                                client_ids = [str(client['cliente_id']) for client in transferred_clients]
-                                client_count = len(client_ids)
-                                print(f"DEBUG: Se encontraron {client_count} clientes para restaurar.")
-                                
-                                # Restaurar solo los clientes específicos que fueron transferidos
-                                print(f"DEBUG: Iniciando restauración de clientes a vendedor {vendedor_id_to_enable}.")
-                                sql_restore_clients = f"""
-                                    UPDATE clientes SET vendedor_id = %s 
-                                    WHERE id IN ({','.join(['%s'] * len(client_ids))})
-                                    AND vendedor_id = %s
-                                """
-                                cursor.execute(sql_restore_clients, [vendedor_id_to_enable] + client_ids + [vendedor_temporal_id])
-                                
-                                # Marcar la transferencia como restaurada
-                                sql_mark_restored = """
-                                    UPDATE transferencias_temporales 
-                                    SET fecha_restauracion = NOW() 
-                                    WHERE id = %s
-                                """
-                                cursor.execute(sql_mark_restored, (transfer_id,))
-                                
-                                # Eliminar los detalles de transferencia ya que fueron restaurados
-                                sql_delete_details = """
-                                    DELETE FROM transferencias_temporales_detalle 
-                                    WHERE transferencia_id = %s
-                                """
-                                cursor.execute(sql_delete_details, (transfer_id,))
-                                
-                                print(f"DEBUG: Restaurados {client_count} clientes específicos al vendedor {user_to_enable['nombre']} {user_to_enable['apellido']}")
+                    # Obtener el ID del vendedor interno (ID 1)
+                    sql_get_internal_vendedor = "SELECT id FROM vendedores WHERE cedula = (SELECT cedula FROM usuarios WHERE id = 1)"
+                    cursor.execute(sql_get_internal_vendedor)
+                    internal_vendedor = cursor.fetchone()
 
-            # Update status to 'active'
-            sql = "UPDATE usuarios SET status = 'active' WHERE id = %s"
-            cursor.execute(sql, (id,))
-            connection.commit()
-            print(f"DEBUG: Estado del usuario {id} actualizado a 'active'.")
+                    if internal_vendedor:
+                        internal_vendedor_id = internal_vendedor['id']
+                        
+                        # Contar los clientes a restaurar
+                        sql_count_clients = "SELECT COUNT(*) as count FROM clientes WHERE vendedor_id = %s"
+                        cursor.execute(sql_count_clients, (internal_vendedor_id,))
+                        client_data = cursor.fetchone()
+                        client_count = client_data['count'] if client_data else 0
+
+                        if client_count > 0:
+                            # Restaurar los clientes al vendedor original
+                            sql_restore_clients = "UPDATE clientes SET vendedor_id = %s WHERE vendedor_id = %s"
+                            cursor.execute(sql_restore_clients, (vendedor_id_to_enable, internal_vendedor_id))
+
+                            # Actualizar el mensaje de éxito
+                            message = f'Usuario habilitado exitosamente. Se restauraron {client_count} clientes a su vendedor original.'
             
-            # Mensaje personalizado para vendedores con clientes restaurados
-            if user_to_enable['rol'] == 'vendedor' and client_count > 0:
-                message = f'Usuario habilitado exitosamente. Se restauraron {client_count} clientes a su vendedor original.'
-            else:
-                message = 'Usuario habilitado exitosamente'
+            # Actualizar el estado del usuario a 'active'
+            sql_update_status = "UPDATE usuarios SET status = 'active' WHERE id = %s"
+            cursor.execute(sql_update_status, (id,))
+            connection.commit()
                 
         return jsonify({'success': True, 'message': message})
     except Exception as e:
         connection.rollback()
-        print(f"ERROR: Fallo al habilitar usuario: {str(e)}")
+        print(f"Error al habilitar usuario: {str(e)}")
         return jsonify({'success': False, 'message': f'Error al habilitar usuario: {str(e)}'}), 500
     finally:
         connection.close()
-        print("DEBUG: Conexión a la base de datos cerrada.")
         
         
 # NEW API: Get Vendedor ID for logged-in user
