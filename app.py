@@ -16,11 +16,11 @@ app = Flask(__name__, static_folder='static', template_folder='templates')
 app.secret_key = "prealca_secret_key_2023"
 
 # Configuración de la base de datos MySQL
-db_host = "yamanote.proxy.rlwy.net"
+db_host = "shuttle.proxy.rlwy.net"
 db_user = "root"
-db_password = "IntAxhBpIcxKbxDnXGEOGDuwoljAnvxF"
+db_password = "oNGmiCQqYKoKxpjHwBtLGTPnsrUakHyj"
 db_name = "railway"
-db_port = 14899
+db_port = 29138
 
 # Configuración del correo
 app.config['MAIL_SERVER'] = 'smtp.gmail.com'
