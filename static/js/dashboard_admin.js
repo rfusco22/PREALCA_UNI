@@ -1759,6 +1759,15 @@ function setupEditPrecioModal() {
   })
 }
 
+function traducirEstado(estado) {
+  const traducciones = {
+    pending: 'Pendiente',
+    approved: 'Aprobado',
+    denied: 'Denegado'
+  };
+  // Devuelve la traducción si existe, o el texto original si no.
+  return traducciones[estado.toLowerCase()] || estado;
+}
 // Modify the existing DOMContentLoaded event listener
 document.addEventListener("DOMContentLoaded", () => {
   loadUserInfo()
