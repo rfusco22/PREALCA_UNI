@@ -667,54 +667,54 @@ function loadMaterialRequestFormMaterials() {
     })
 }
 
-// Load Material Requests Table
 function loadMaterialRequestsTable() {
-  const table = document.getElementById("material-requests-table")
-  if (!table) return
+  const table = document.getElementById("material-requests-table");
+  if (!table) return;
 
-  const tbody = table.querySelector("tbody")
+  const tbody = table.querySelector("tbody");
 
   fetch("/api/material_requests/list")
     .then((response) => {
       if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`)
+        throw new Error(`HTTP error! status: ${response.status}`);
       }
-      return response.json()
+      return response.json();
     })
     .then((data) => {
-      tbody.innerHTML = ""
+      tbody.innerHTML = "";
       if (data.length === 0) {
         tbody.innerHTML =
-          '<tr><td colspan="8" style="text-align: center;">No hay solicitudes de material registradas.</td></tr>'
-        return
+          '<tr><td colspan="7" style="text-align: center;">No hay solicitudes de material registradas.</td></tr>';
+        return;
       }
       data.forEach((request) => {
-        const row = document.createElement("tr")
-        let statusClass = ""
+        const row = document.createElement("tr");
+        let statusClass = "";
         if (request.status === "pending") {
-          statusClass = "status-pending"
+          statusClass = "status-pending";
         } else if (request.status === "approved") {
-          statusClass = "status-approved"
+          statusClass = "status-approved";
         } else if (request.status === "denied") {
-          statusClass = "status-denied"
+          statusClass = "status-denied";
         }
 
+        // Correcciones aplicadas aquí:
         row.innerHTML = `
-        <td>${request.request_date}</td>
-        <td>${request.material_name}</td>
-        <td>${request.quantity_requested}</td>
-        <td>${request.unit}</td>
-        <td>${request.reason || "N/A"}</td>
-        <td><span class="status-badge ${statusClass}">${traducirEstado(request.status)}</span></td>
-        <td>${request.responder_full_name || "N/A"}</td>
-      `
-        tbody.appendChild(row)
-      })
+          <td>${request.request_date}</td> 
+          <td>${request.material_name}</td>
+          <td>${request.quantity_requested}</td>
+          <td>${request.unit}</td>
+          <td>${request.reason || "N/A"}</td>
+          <td><span class="status-badge ${statusClass}">${traducirEstado(request.status)}</span></td>
+          <td>${request.responder_full_name || "N/A"}</td>
+        `;
+        tbody.appendChild(row);
+      });
     })
     .catch((error) => {
-      console.error("Error al cargar solicitudes de material:", error)
-      tbody.innerHTML = `<tr><td colspan="8" class="error-message">Error al cargar solicitudes de material: ${error.message}</td></tr>`
-    })
+      console.error("Error al cargar solicitudes de material:", error);
+      tbody.innerHTML = `<tr><td colspan="7" class="error-message">Error al cargar solicitudes de material: ${error.message}</td></tr>`;
+    });
 }
 
 // Utility functions
