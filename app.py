@@ -3864,17 +3864,21 @@ def list_ordenes_compra_proveedor():
            cursor.execute(sql)
            orders = cursor.fetchall()
 
-       # Format date for each order
        for order in orders:
            if isinstance(order['fecha'], (datetime, date)):
-               order['fecha'] = order['fecha'].strftime('%d/%m/%Y') # Changed format
+               order['fecha'] = order['fecha'].strftime('%d/%m/%Y')
+           # *** INICIO DE LA CORRECCIÓN ***
+           # Convertir el campo 'total' de Decimal a float
+           if 'total' in order and order['total'] is not None:
+               order['total'] = float(order['total'])
+           # *** FIN DE LA CORRECCIÓN ***
 
        return jsonify(orders)
    except Exception as e:
        print(f"Error al listar órdenes de compra: {str(e)}")
        return jsonify({'success': False, 'message': f'Error al listar órdenes de compra: {str(e)}'}), 500
    finally:
-       connection.close() # Ensure connection is closed
+       connection.close()
 
 @app.route('/api/ordenes_compra_proveedor/<int:order_id>', methods=['GET'])
 def get_orden_compra_proveedor(order_id):
