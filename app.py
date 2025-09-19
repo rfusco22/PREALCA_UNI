@@ -581,40 +581,43 @@ def get_alertas_disenos():
  except Exception as e:
   return jsonify({'error': str(e)}), 500
 
-# --- API para Diseños de Concreto ---
-@app.route('/api/concrete_designs/<int:design_id>', methods=['GET'])
-def get_concrete_design_by_id(design_id):
+def get_concrete_designs():
     connection = get_db_connection()
     try:
         with connection.cursor() as cursor:
-            sql_design = "SELECT id, nombre, resistencia, asentamiento FROM concrete_designs WHERE id = %s"
-            cursor.execute(sql_design, (design_id,))
-            design = cursor.fetchone()
+            sql = "SELECT id, nombre, resistencia, asentamiento FROM concrete_designs ORDER BY resistencia ASC, asentamiento ASC"
+            cursor.execute(sql)
+            designs_db = cursor.fetchall()
 
-            if not design:
-                return jsonify({'success': False, 'message': 'Diseño de concreto no encontrado'}), 404
+            designs_serializable = []
+            for design in designs_db:
+                # Obtener los materiales para el diseño actual
+                sql_materials = "SELECT material_name, quantity_kg FROM concrete_design_materials WHERE design_id = %s"
+                cursor.execute(sql_materials, (design['id'],))
+                materials_db = cursor.fetchall()
 
-            # Obtener los materiales
-            sql_materials = "SELECT id, material_name, quantity_kg FROM concrete_design_materials WHERE design_id = %s"
-            cursor.execute(sql_materials, (design_id,))
-            materials_db = cursor.fetchall()
+                # Serializar los materiales, convirtiendo quantity_kg a float
+                materials_serializable = []
+                for material in materials_db:
+                    materials_serializable.append({
+                        'material_name': material['material_name'],
+                        'quantity_kg': float(material['quantity_kg']) if material['quantity_kg'] is not None else 0.0
+                    })
 
-            # Serializar los materiales manualmente para evitar errores de tipo
-            materials_serializable = []
-            for material in materials_db:
-                materials_serializable.append({
-                    'id': material['id'],
-                    'material_name': material['material_name'],
-                    'quantity_kg': float(material['quantity_kg']) if material['quantity_kg'] is not None else 0.0
+                # Construir el objeto de diseño serializado
+                designs_serializable.append({
+                    'id': design['id'],
+                    'nombre': design['nombre'],
+                    'resistencia': design['resistencia'],
+                    'asentamiento': design['asentamiento'],
+                    'materiales': materials_serializable
                 })
 
-            design['materiales'] = materials_serializable
-
-        return jsonify(design)
+        return jsonify(designs_serializable)
 
     except Exception as e:
-        print(f"Error al obtener diseño de concreto por ID: {str(e)}")
-        return jsonify({'success': False, 'message': f'Error al obtener diseño de concreto: {str(e)}'}), 500
+        print(f"Error al obtener diseños de concreto: {str(e)}")
+        return jsonify({'success': False, 'message': f'Error al obtener diseños de concreto: {str(e)}'}), 500
     finally:
         connection.close()
 
