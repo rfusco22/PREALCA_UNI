@@ -3538,46 +3538,47 @@ def list_quotations():
     connection = get_db_connection()
     try:
         with connection.cursor() as cursor:
+            # SQL query to get quotation summary including first item description and total quantity
             sql = """
                 SELECT
-                    c.id, c.quotation_number, c.quotation_date, c.client_name, c.seller_name,
-                    c.total_amount, c.validity_days, c.notes, c.status,
+                    c.id,
+                    c.quotation_number,
+                    c.quotation_date,
+                    c.client_name,
+                    c.seller_name,
+                    c.total_amount,
+                    c.validity_days,
+                    c.notes,
+                    c.status,
                     SUM(ci.quantity) AS total_quantity,
                     CASE
                         WHEN COUNT(ci.id) = 1 THEN MAX(ci.description)
                         ELSE 'Múltiples ítems'
                     END AS item_summary_description
-                FROM cotizacion c
-                LEFT JOIN cotizacion_items ci ON c.id = ci.quotation_id
-                GROUP BY c.id
-                ORDER BY c.quotation_date DESC, c.quotation_number DESC
+                FROM
+                    cotizacion c
+                LEFT JOIN
+                    cotizacion_items ci ON c.id = ci.quotation_id
+                GROUP BY
+                    c.id, c.quotation_number, c.quotation_date, c.client_name, c.seller_name, c.total_amount, c.validity_days, c.notes, c.status
+                ORDER BY
+                    c.quotation_date DESC, c.quotation_number DESC
             """
             cursor.execute(sql)
-            quotations_db = cursor.fetchall()
+            quotations = cursor.fetchall()
 
-        quotations_serializable = []
-        for q in quotations_db:
-            quotations_serializable.append({
-                'id': q['id'],
-                'quotation_number': q['quotation_number'],
-                'quotation_date': q['quotation_date'].strftime('%d/%m/%Y') if isinstance(q['quotation_date'], (datetime, date)) else q['quotation_date'],
-                'client_name': q['client_name'],
-                'seller_name': q['seller_name'],
-                'total_amount': float(q['total_amount']) if q['total_amount'] is not None else 0.0,
-                'validity_days': q['validity_days'],
-                'notes': q['notes'],
-                'status': q['status'],
-                'total_quantity': float(q['total_quantity']) if q['total_quantity'] is not None else 0.0,
-                'item_summary_description': q['item_summary_description']
-            })
+            # Format the quotation_date
+            for quotation in quotations:
+                if isinstance(quotation['quotation_date'], (datetime, date)):
+                    quotation['quotation_date'] = quotation['quotation_date'].strftime('%d/%m/%Y')
 
-        return jsonify(quotations_serializable)
+            return jsonify(quotations)
     except Exception as e:
         print(f"Error listing quotations: {str(e)}")
         return jsonify({'success': False, 'message': f'Error al listar cotizaciones: {str(e)}'}), 500
     finally:
         connection.close()
-        
+
 @app.route('/api/quotations/<int:quotation_id>', methods=['GET'])
 def get_quotation_by_id(quotation_id):
     if session.get('user_role') not in ['administrador', 'gerencia', 'vendedor']:
@@ -3586,7 +3587,9 @@ def get_quotation_by_id(quotation_id):
     connection = get_db_connection()
     try:
         with connection.cursor() as cursor:
+            # ****** INICIO: ACTUALIZAR CONSULTA SQL ******
             sql_quotation = "SELECT *, include_freight, freight_cost FROM cotizacion WHERE id = %s"
+            # ****** FIN: ACTUALIZAR CONSULTA SQL ******
             cursor.execute(sql_quotation, (quotation_id,))
             quotation = cursor.fetchone()
 
@@ -3595,28 +3598,12 @@ def get_quotation_by_id(quotation_id):
 
             sql_items = "SELECT code, description, quantity, unit_price, item_total FROM cotizacion_items WHERE quotation_id = %s"
             cursor.execute(sql_items, (quotation_id,))
-            items_db = cursor.fetchall()
-
-            items_serializable = []
-            for item in items_db:
-                items_serializable.append({
-                    'code': item['code'],
-                    'description': item['description'],
-                    'quantity': float(item['quantity']) if item['quantity'] is not None else 0.0,
-                    'unit_price': float(item['unit_price']) if item['unit_price'] is not None else 0.0,
-                    'item_total': float(item['item_total']) if item['item_total'] is not None else 0.0,
-                })
-
-            quotation['items'] = items_serializable
-
-            numeric_fields = ['subtotal', 'exempt_amount', 'taxable_base', 'iva_amount', 'total_amount', 'freight_cost']
-            for field in numeric_fields:
-                if quotation.get(field) is not None:
-                    quotation[field] = float(quotation[field])
-
-            if isinstance(quotation.get('quotation_date'), (datetime, date)):
+            items = cursor.fetchall()
+            
+            quotation['items'] = items
+            if isinstance(quotation['quotation_date'], (datetime, date)):
                 quotation['quotation_date'] = quotation['quotation_date'].strftime('%Y-%m-%d')
-            if isinstance(quotation.get('created_at'), datetime):
+            if isinstance(quotation['created_at'], datetime):
                 quotation['created_at'] = quotation['created_at'].strftime('%d/%m/%Y %H:%M:%S')
 
         return jsonify(quotation)
