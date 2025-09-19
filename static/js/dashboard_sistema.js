@@ -726,14 +726,7 @@ document.addEventListener("DOMContentLoaded", () => {
           }
         }
 
-        const rolEditInput = document.getElementById("rol_user_edit");
-        if (rolEditInput) {
-            rolEditInput.value = user.rol;
-        } else {
-            // This message will appear in the console if the element is missing,
-            // which helps with debugging but doesn't crash the script.
-            console.error("HTML element with id 'rol_user_edit' was not found!");
-        }
+        document.getElementById("rol_user_edit").value = user.rol
         editUserStatusInput.value = user.status // NEW: Populate status
 
         // Display current photo
@@ -1085,4 +1078,3 @@ document.addEventListener("DOMContentLoaded", () => {
     5 * 60 * 1000,
   ) // Every 5 minutes
 })
-
