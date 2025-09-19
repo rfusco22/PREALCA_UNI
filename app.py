@@ -2397,11 +2397,11 @@ def update_vendedor_by_id():
 
 @app.route('/api/vendedores/delete/<int:id>', methods=['POST'])
 def delete_vendedor_by_id(id):
-    if session.get('user_role') not in ['administrador']: # Removed 'gerencia'
+    if session.get('user_role') not in ['administrador']:
         return jsonify({'success': False, 'message': 'Acceso denegado'}), 403
 
     connection = get_db_connection()
-    try: # <-- Corrected indentation
+    try:
         # Check if there are clients associated with this seller
         with connection.cursor() as cursor:
             sql = "SELECT COUNT(*) as count FROM clientes WHERE vendedor_id = %s"
@@ -2417,7 +2417,6 @@ def delete_vendedor_by_id(id):
             connection.commit()
         return jsonify({'success': True, 'message': 'Vendedor eliminado exitosamente'})
     except Exception as e:
-        # It's good practice to rollback on error
         if connection:
             connection.rollback()
         return jsonify({'success': False, 'message': f'Error al eliminar vendedor: {str(e)}'}), 500
