@@ -3508,7 +3508,6 @@ def list_quotations():
     connection = get_db_connection()
     try:
         with connection.cursor() as cursor:
-            # La consulta SQL se mantiene igual, pero obtenemos los datos crudos
             sql = """
                 SELECT
                     c.id, c.quotation_number, c.quotation_date, c.client_name, c.seller_name,
@@ -3526,7 +3525,6 @@ def list_quotations():
             cursor.execute(sql)
             quotations_db = cursor.fetchall()
 
-        # Construir la lista manualmente para ser compatible con JSON
         quotations_serializable = []
         for q in quotations_db:
             quotations_serializable.append({
@@ -3569,7 +3567,6 @@ def get_quotation_by_id(quotation_id):
             cursor.execute(sql_items, (quotation_id,))
             items_db = cursor.fetchall()
 
-            # Serializar la lista de items manualmente
             items_serializable = []
             for item in items_db:
                 items_serializable.append({
@@ -3582,7 +3579,6 @@ def get_quotation_by_id(quotation_id):
 
             quotation['items'] = items_serializable
 
-            # Serializar los campos numéricos y de fecha del objeto principal
             numeric_fields = ['subtotal', 'exempt_amount', 'taxable_base', 'iva_amount', 'total_amount', 'freight_cost']
             for field in numeric_fields:
                 if quotation.get(field) is not None:
