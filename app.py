@@ -3566,7 +3566,6 @@ def serve_uploads(filename):
     print(f"ERROR: serve_uploads - File not found at: {full_path}")
   return send_from_directory(app.config['UPLOAD_FOLDER'], filename)
 
-# --- API para Proveedores ---
 @app.route('/api/proveedores', methods=['GET'])
 def get_proveedores():
   connection = get_db_connection()
@@ -3580,6 +3579,13 @@ def get_proveedores():
         sql_materiales = "SELECT id, nombre_material, precio, unidad_medida FROM materiales_proveedor WHERE proveedor_id = %s"
         cursor.execute(sql_materiales, (proveedor['id'],))
         proveedor['materiales'] = cursor.fetchall()
+
+        # *** INICIO DE LA CORRECCIÓN ***
+        # Convertir el campo 'precio' de cada material a float
+        for material in proveedor['materiales']:
+            if 'precio' in material and material['precio'] is not None:
+                material['precio'] = float(material['precio'])
+        # *** FIN DE LA CORRECCIÓN ***
 
     return jsonify(proveedores)
   except Exception as e:
