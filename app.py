@@ -3601,7 +3601,7 @@ def get_quotation_by_id(quotation_id):
     connection = get_db_connection()
     try:
         with connection.cursor() as cursor:
-            sql_quotation = "SELECT *, include_freight, freight_cost FROM cotizacion WHERE id = %s"
+            sql_quotation = "SELECT * FROM cotizacion WHERE id = %s"
             cursor.execute(sql_quotation, (quotation_id,))
             quotation = cursor.fetchone()
 
@@ -3612,22 +3612,11 @@ def get_quotation_by_id(quotation_id):
             cursor.execute(sql_items, (quotation_id,))
             items = cursor.fetchall()
             
-            # Convert Decimal types in the quotation dictionary
-            for key in quotation:
-                if isinstance(quotation[key], Decimal):
-                    quotation[key] = float(quotation[key])
-
-            # Convert Decimal types in the items list
-            for item in items:
-                for key in item:
-                    if isinstance(item[key], Decimal):
-                        item[key] = float(item[key])
-
             quotation['items'] = items
             if isinstance(quotation['quotation_date'], (datetime, date)):
-                quotation['quotation_date'] = quotation['quotation_date'].strftime('%Y-%m-%d')
+                quotation['quotation_date'] = quotation['quotation_date'].strftime('%d/%m/%Y') # Changed format
             if isinstance(quotation['created_at'], datetime):
-                quotation['created_at'] = quotation['created_at'].strftime('%d/%m/%Y %H:%M:%S')
+                quotation['created_at'] = quotation['created_at'].strftime('%d/%m/%Y %H:%M:%S') # Changed format
 
         return jsonify(quotation)
     except Exception as e:
