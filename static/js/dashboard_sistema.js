@@ -527,9 +527,9 @@ document.addEventListener("DOMContentLoaded", () => {
     e.preventDefault()
     console.log("DEBUG JS: Form submission initiated, preventing default.") // ADDED LOG
 
-    const submitButton = addUserForm.querySelector('button[type="submit"]') // Get the submit button
-    submitButton.disabled = true // Disable button on submission
-    submitButton.textContent = "Agregando Usuario..." // Change text to indicate loading
+    const submitButton = addUserForm.querySelector('button[type="submit"]')
+    submitButton.disabled = true
+    submitButton.textContent = "Agregando Usuario..."
 
     // Run all client-side validations
     const isNameValid = validateName(addUserNameInput, document.getElementById("user_nombre_validation_message"))
@@ -563,8 +563,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
     if (!isRolSelected) {
       displayFlashMessage("Por favor, seleccione un rol para el usuario.", "error")
-      submitButton.disabled = false // Re-enable button
-      submitButton.textContent = "Agregar Usuario" // Reset button text
+      submitButton.disabled = false
+      submitButton.textContent = "Agregar Usuario"
       return
     }
 
@@ -579,10 +579,10 @@ document.addEventListener("DOMContentLoaded", () => {
       !isFotoValid ||
       !isRolSelected
     ) {
-      console.log("DEBUG JS: Client-side validation failed.") // ADDED LOG
+      console.log("DEBUG JS: Client-side validation failed.")
       displayFlashMessage("Por favor, corrija los errores en el formulario.", "error")
-      submitButton.disabled = false // Re-enable button
-      submitButton.textContent = "Agregar Usuario" // Reset button text
+      submitButton.disabled = false
+      submitButton.textContent = "Agregar Usuario"
       return
     }
 
@@ -598,7 +598,7 @@ document.addEventListener("DOMContentLoaded", () => {
     formData.append("telefono", `${addUserTelefonoPrefixInput.value}${addUserTelefonoNumberInput.value.trim()}`)
 
     // DEBUG: Log FormData content
-    console.log("DEBUG JS: FormData content before fetch:") // ADDED LOG
+    console.log("DEBUG JS: FormData content before fetch:")
     for (const pair of formData.entries()) {
       console.log(pair[0] + ": " + pair[1])
     }
@@ -608,13 +608,20 @@ document.addEventListener("DOMContentLoaded", () => {
       body: formData,
     })
       .then((response) => {
-        console.log("DEBUG JS: Received raw response from backend:", response) // ADDED LOG
+        console.log("DEBUG JS: Received raw response from backend:", response)
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`)
+        }
+        const contentType = response.headers.get("content-type")
+        if (!contentType || !contentType.includes("application/json")) {
+          throw new Error("Response is not JSON")
+        }
         return response.json()
       })
       .then((data) => {
-        console.log("DEBUG JS: Received parsed JSON data from backend:", data) // ADDED LOG
+        console.log("DEBUG JS: Received parsed JSON data from backend:", data)
         if (data.success) {
-          console.log("DEBUG JS: Backend reported success:", data.message) // ADDED LOG
+          console.log("DEBUG JS: Backend reported success:", data.message)
           displayFlashMessage(data.message, "success")
           addUserForm.reset()
           // Clear validation messages and classes after successful submission
@@ -634,17 +641,23 @@ document.addEventListener("DOMContentLoaded", () => {
           loadUsers() // Reload users table
           showSection("manage-users") // Redirect to manage users after adding
         } else {
-          console.log("DEBUG JS: Backend reported error:", data.message) // ADDED LOG
+          console.log("DEBUG JS: Backend reported error:", data.message)
           displayFlashMessage("Error: " + data.message, "error")
         }
       })
       .catch((error) => {
-        console.error("DEBUG JS: Error during fetch:", error) // ADDED LOG
-        displayFlashMessage("Error de red o del servidor al agregar usuario.", "error")
+        console.error("DEBUG JS: Error during fetch:", error)
+        if (error.message.includes("HTTP error! status: 500")) {
+          displayFlashMessage("Error interno del servidor. Por favor, contacte al administrador.", "error")
+        } else if (error.message.includes("Response is not JSON")) {
+          displayFlashMessage("Error de formato en la respuesta del servidor.", "error")
+        } else {
+          displayFlashMessage("Error de red o del servidor al agregar usuario.", "error")
+        }
       })
       .finally(() => {
-        submitButton.disabled = false // Re-enable button regardless of success or failure
-        submitButton.textContent = "Agregar Usuario" // Reset button text
+        submitButton.disabled = false
+        submitButton.textContent = "Agregar Usuario"
         console.log("DEBUG JS: Fetch operation finished, button re-enabled.") // ADDED LOG
       })
   }
@@ -691,29 +704,35 @@ document.addEventListener("DOMContentLoaded", () => {
   // Edit User Function
   function editUser(userId) {
     fetch(`/api/admin/users/${userId}`)
-      .then((response) => response.json())
+      .then((response) => {
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`)
+        }
+        return response.json()
+      })
       .then((user) => {
         if (user.success === false) {
           displayFlashMessage("Error: " + user.message, "error")
           return
         }
-        userModalTitle.textContent = "Editar Usuario"
-        userIdInput.value = user.id
-        editUserNameInput.value = user.nombre
-        editUserApellidoInput.value = user.apellido
+
+        if (userModalTitle) userModalTitle.textContent = "Editar Usuario"
+        if (userIdInput) userIdInput.value = user.id
+        if (editUserNameInput) editUserNameInput.value = user.nombre || ""
+        if (editUserApellidoInput) editUserApellidoInput.value = user.apellido || ""
 
         // Split cedula into prefix and number for edit form
-        const cedulaParts = user.cedula.split("-")
+        const cedulaParts = user.cedula ? user.cedula.split("-") : ["V", ""]
         if (cedulaParts.length === 2) {
-          editUserDocPrefixInput.value = cedulaParts[0]
-          editUserDocNumberInput.value = cedulaParts[1]
+          if (editUserDocPrefixInput) editUserDocPrefixInput.value = cedulaParts[0]
+          if (editUserDocNumberInput) editUserDocNumberInput.value = cedulaParts[1]
         } else {
-          editUserDocPrefixInput.value = "V" // Default
-          editUserDocNumberInput.value = user.cedula // Fallback
+          if (editUserDocPrefixInput) editUserDocPrefixInput.value = "V" // Default
+          if (editUserDocNumberInput) editUserDocNumberInput.value = user.cedula || "" // Fallback
         }
 
-        editUserCorreoInput.value = user.correo
-        editUserDireccionInput.value = user.direccion || "" // NEW: Populate direccion
+        if (editUserCorreoInput) editUserCorreoInput.value = user.correo || ""
+        if (editUserDireccionInput) editUserDireccionInput.value = user.direccion || ""
 
         // Split telefono into prefix and number for edit form
         if (user.telefono) {
@@ -721,24 +740,28 @@ document.addEventListener("DOMContentLoaded", () => {
           if (phoneStr.length === 11) {
             const prefix = phoneStr.substring(0, 4)
             const number = phoneStr.substring(4)
-            editUserTelefonoPrefixInput.value = prefix
-            editUserTelefonoNumberInput.value = number
+            if (editUserTelefonoPrefixInput) editUserTelefonoPrefixInput.value = prefix
+            if (editUserTelefonoNumberInput) editUserTelefonoNumberInput.value = number
           }
         }
 
-        document.getElementById("rol_user_edit").value = user.rol
-        editUserStatusInput.value = user.status // NEW: Populate status
+        const rolEditSelect = document.getElementById("rol_user_edit")
+        if (rolEditSelect) rolEditSelect.value = user.rol || ""
+
+        if (editUserStatusInput) editUserStatusInput.value = user.status || "active"
 
         // Display current photo
-        if (user.foto) {
-          currentFotoPreview.src = user.foto
-          currentFotoPreview.style.display = "block"
-        } else {
-          currentFotoPreview.src = ""
-          currentFotoPreview.style.display = "none"
+        if (currentFotoPreview) {
+          if (user.foto) {
+            currentFotoPreview.src = user.foto
+            currentFotoPreview.style.display = "block"
+          } else {
+            currentFotoPreview.src = "/static/img/user.jpg"
+            currentFotoPreview.style.display = "block"
+          }
         }
 
-        userModal.style.display = "block"
+        if (userModal) userModal.style.display = "block"
       })
       .catch((error) => {
         console.error("Error fetching user for edit:", error)
