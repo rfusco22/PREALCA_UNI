@@ -10,9 +10,10 @@
   <link rel="stylesheet" href="/static/css/validation.css">
 </head>
 <body>
+  <!-- Sidebar -->
   <div class="sidebar">
       <div class="user-info">
-          <img id="user-photo" src="{{ usuario.foto if usuario and usuario.foto else '/static/uploads/V-7251419_20250802130133.jpg' }}" alt="Foto de {{ usuario.nombre if usuario else 'Usuario' }}" onerror="this.onerror=null;this.src='/static/uploads/V-7251419_20250802130133.jpg';">
+          <img id="user-photo" src="{{ usuario.foto if usuario and usuario.foto else '/static/img/user.png' }}" alt="Foto de {{ usuario.nombre if usuario else 'Usuario' }}" onerror="this.onerror=null;this.src='/static/img/user.png';">
           <h2 id="user-name">{{ usuario.nombre }} {{ usuario.apellido }}</h2>
           <p id="user-role">Sistema</p>
       </div>
@@ -23,9 +24,21 @@
       </ul>
   </div>
 
+  <!-- Contenido -->
   <div class="content">
-      <div id="flash-messages"></div>
+      <!-- Mensajes flash -->
+      <div id="flash-messages">
+          {% with messages = get_flashed_messages(with_categories=true) %}
+              {% if messages %}
+                  {% for category, message in messages %}
+                      <div class="alert alert-{{ category }}">{{ message }}</div>
+                  {% endfor %}
+              {% endif %}
+          {% endwith %}
+      </div>
 
+      <!-- Páginas -->
+      <!-- Add User Page -->
       <div id="add-user" class="page active">
           <h2>Agregar Nuevo Usuario</h2>
           <form id="add-user-form" action="/api/admin/users" method="POST" class="form-grid" enctype="multipart/form-data">
@@ -66,7 +79,8 @@
                   <div id="user_contrasena_validation_message" class="field-validation-message"></div>
               </div>
               <div class="form-group">
-                  <label for="telefono_prefix">Teléfono:</label>
+                  <label for="telefono">Teléfono:</label>
+                  <!-- Separando el campo de teléfono en selector de código y input de número -->
                   <div class="phone-input-group">
                       <select id="telefono_prefix" name="telefono_prefix" required>
                           <option value="0412">0412</option>
@@ -102,6 +116,7 @@
           </form>
       </div>
 
+      <!-- Manage Users Page -->
       <div id="manage-users" class="page">
           <h2>Gestionar Usuarios</h2>
           <div class="table-container">
@@ -113,17 +128,19 @@
                           <th>Correo</th>
                           <th>Rol</th>
                           <th>Estado</th>
-                          <th>Usuario</th> 
+                          <th>Usuario</th> <!-- NEW: Added for account status -->
                           <th>Última Actividad</th>
                           <th>Acciones</th>
                       </tr>
                   </thead>
                   <tbody>
-                      </tbody>
+                      <!-- Se llenará con JavaScript -->
+                  </tbody>
               </table>
           </div>
       </div>
 
+      <!-- Modal para editar usuario -->
       <div id="user-form-modal" class="modal">
           <div class="modal-content">
               <span class="close">&times;</span>
@@ -141,13 +158,13 @@
                       <div id="apellido_user_edit_validation_message" class="field-validation-message"></div>
                   </div>
                   <div class="form-group">
-                      <label for="documento_type_user_edit">Documento:</label>
+                      <label for="documento_user_edit_prefix">Documento:</label>
                       <div class="document-input-group">
-                          <select id="documento_type_user_edit" name="documento_type" required>
+                          <select id="documento_user_edit_prefix" name="documento_type" required>
                               <option value="V">V</option>
                               <option value="E">E</option>
                           </select>
-                          <input type="text" id="documento_number_user_edit" name="documento_number" placeholder="Número de documento (ej. 12345678)" required pattern="\d{7,8}">
+                          <input type="text" id="documento_user_edit_number" name="documento_number" placeholder="Número de documento (ej. 12345678)" required pattern="\d{7,8}">
                       </div>
                       <div id="documento_user_edit_validation_message" class="field-validation-message"></div>
                   </div>
@@ -157,16 +174,17 @@
                       <div id="correo_user_edit_validation_message" class="field-validation-message"></div>
                   </div>
                   <div class="form-group">
-                      <label for="telefono_prefix_user_edit">Teléfono:</label>
+                      <label for="telefono_user_edit">Teléfono:</label>
+                      <!-- Separando el campo de teléfono en selector de código y input de número para edición -->
                       <div class="phone-input-group">
-                          <select id="telefono_prefix_user_edit" name="telefono_prefix" required>
+                          <select id="telefono_user_edit_prefix" name="telefono_prefix" required>
                               <option value="0412">0412</option>
                               <option value="0422">0422</option>
                               <option value="0426">0426</option>
                               <option value="0414">0414</option>
                               <option value="0424">0424</option>
                           </select>
-                          <input type="tel" id="telefono_number_user_edit" name="telefono_number" placeholder="1234567" required pattern="[0-9]{7}" maxlength="7">
+                          <input type="tel" id="telefono_user_edit_number" name="telefono_number" placeholder="1234567" required pattern="[0-9]{7}" maxlength="7">
                       </div>
                       <div id="telefono_user_edit_validation_message" class="field-validation-message"></div>
                   </div>
@@ -177,7 +195,7 @@
                   </div>
                   <div class="form-group">
                       <label>Foto Actual:</label>
-                      <img id="current_user_photo_preview" src="/static/uploads/V-7251419_20250802130133.jpg" alt="Foto actual" style="width: 100px; height: 100px; object-fit: cover; border-radius: 50%; margin-top: 5px;">
+                      <img id="current_user_photo_preview" src="/static/img/user.png" alt="Foto actual" style="width: 100px; height: 100px; object-fit: cover; border-radius: 50%; margin-top: 5px;">
                   </div>
                   <div class="form-group">
                       <label for="foto_user_edit">Cambiar Foto:</label>
@@ -185,8 +203,8 @@
                       <div id="foto_user_edit_validation_message" class="field-validation-message"></div>
                   </div>
                   <div class="form-group">
-                    <label for="rol_user_edit">Rol de Usuario</label>
-                    <select id="rol_user_edit" name="rol" class="form-control" required>
+                      <label for="rol_user_edit">Rol:</label>
+                      <select id="rol_user_edit" name="rol" required>
                           <option value="administrador">Administrador</option>
                           <option value="registro">Registro</option>
                           <option value="control_calidad">Control y Calidad</option>
@@ -196,7 +214,7 @@
                       </select>
                   </div>
                   <div class="form-group">
-                      <label for="status_user_edit">Estado de Cuenta:</label>
+                      <label for="status_user_edit">Estado de Cuenta:</label> <!-- NEW: Added for account status -->
                       <select id="status_user_edit" name="status" required>
                           <option value="active">Activo</option>
                           <option value="disabled">Deshabilitado</option>
@@ -217,7 +235,7 @@
           apellido: "{{ usuario.apellido }}",
           nombreCompleto: "{{ usuario.nombre }} {{ usuario.apellido }}",
           rol: "{{ usuario.rol }}",
-          foto: "{{ usuario.foto if usuario and usuario.foto else '/static/uploads/V-7251419_20250802130133.jpg' }}"
+          foto: "{{ usuario.foto if usuario and usuario.foto else '/static/img/user.png' }}"
       };
   </script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
@@ -225,5 +243,3 @@
   <script src="/static/js/dashboard_sistema.js"></script>
 </body>
 </html>
-
-
