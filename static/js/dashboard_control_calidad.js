@@ -700,7 +700,7 @@ function loadMaterialRequestsTable() {
         }
 
         row.innerHTML = `
-        <td>${formatDate(request.request_date)}</td>
+        <td>${request.request_date}</td>
         <td>${request.material_name}</td>
         <td>${request.quantity_requested}</td>
         <td>${request.unit}</td>
