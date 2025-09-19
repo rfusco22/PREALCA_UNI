@@ -787,6 +787,15 @@ function openAddDesignModal() {
   document.getElementById("design-form-modal").style.display = "block"
 }
 
+function traducirEstado(estado) {
+  const traducciones = {
+    pending: 'Pendiente',
+    approved: 'Aprobado',
+    denied: 'Negado'
+  };
+  return traducciones[estado.toLowerCase()] || estado;
+}
+
 function handleFormSubmission(form, url, successMessage, callback) {
   const formData = new FormData(form)
   fetch(url, {
