@@ -1,43 +1,43 @@
 document.addEventListener("DOMContentLoaded", () => {
-  const sidebarLinks = document.querySelectorAll(".sidebar-nav ul li a")
-  const sections = document.querySelectorAll(".dashboard-section")
-  const logoutButton = document.getElementById("logout-btn") // Corrected ID
+  const sidebarLinks = document.querySelectorAll(".sidebar-nav ul li a");
+  const sections = document.querySelectorAll(".dashboard-section");
+  const logoutButton = document.getElementById("logout-btn");
 
   // Modals and Forms for User Management
-  const userModal = document.getElementById("user-form-modal") // Corrected ID
-  const addUserBtn = document.getElementById("add-user-btn") // This ID is not in the HTML, assuming it's for opening the add user form
-  const closeModalButtons = document.querySelectorAll(".close") // Corrected class
-  const userForm = document.getElementById("user-form") // This is the edit form
-  const addUserForm = document.getElementById("add-user-form") // New: Add user form
-  const userModalTitle = document.getElementById("form-title-user") // Corrected ID
-  const userIdInput = document.getElementById("user_id_edit") // Corrected ID
-  const contrasenaInput = document.getElementById("user_contrasena") // Corrected ID for add form password
-  const currentFotoPreview = document.getElementById("current_user_photo_preview") // Corrected ID for edit modal
-  const fotoInput = document.getElementById("user_foto") // Corrected ID for add form photo
+  const userModal = document.getElementById("user-form-modal");
+  const addUserBtn = document.getElementById("add-user-btn");
+  const closeModalButtons = document.querySelectorAll(".close");
+  const userForm = document.getElementById("user-form");
+  const addUserForm = document.getElementById("add-user-form");
+  const userModalTitle = document.getElementById("form-title-user");
+  const userIdInput = document.getElementById("user_id_edit");
+  const contrasenaInput = document.getElementById("user_contrasena");
+  const currentFotoPreview = document.getElementById("current_user_photo_preview");
+  const fotoInput = document.getElementById("user_foto");
 
-  // Edit Profile Modal (assuming these are still needed, though not directly in system dashboard HTML)
-  const editProfileModal = document.getElementById("edit-profile-modal")
-  const editProfileBtn = document.getElementById("edit-profile-btn")
-  const editProfileForm = document.getElementById("edit-profile-form")
-  const editCurrentFotoPreview = document.getElementById("edit-current-foto-preview")
-  const editFotoInput = document.getElementById("edit-foto")
+  // Edit Profile Modal
+  const editProfileModal = document.getElementById("edit-profile-modal");
+  const editProfileBtn = document.getElementById("edit-profile-btn");
+  const editProfileForm = document.getElementById("edit-profile-form");
+  const editCurrentFotoPreview = document.getElementById("edit-current-foto-preview");
+  const editFotoInput = document.getElementById("edit-foto");
 
-  // Change Password Modal (assuming these are still needed)
-  const changePasswordModal = document.getElementById("change-password-modal")
-  const changePasswordBtn = document.getElementById("change-password-btn")
-  const changePasswordForm = document.getElementById("change-password-form")
+  // Change Password Modal
+  const changePasswordModal = document.getElementById("change-password-modal");
+  const changePasswordBtn = document.getElementById("change-password-btn");
+  const changePasswordForm = document.getElementById("change-password-form");
 
   // Input fields for Add User Form
-  const addUserNameInput = document.getElementById("user_nombre")
-  const addUserApellidoInput = document.getElementById("user_apellido")
-  const addUserDocPrefixInput = document.getElementById("user_documento_prefix")
-  const addUserDocNumberInput = document.getElementById("user_documento_number")
-  const addUserCorreoInput = document.getElementById("user_correo")
-  const addUserContrasenaInput = document.getElementById("user_contrasena")
-  const addUserDireccionInput = document.getElementById("direccion")
-  const addUserTelefonoPrefixInput = document.getElementById("telefono_prefix")
-  const addUserTelefonoNumberInput = document.getElementById("telefono_number")
-  const addUserFotoInput = document.getElementById("user_foto")
+  const addUserNameInput = document.getElementById("user_nombre");
+  const addUserApellidoInput = document.getElementById("user_apellido");
+  const addUserDocPrefixInput = document.getElementById("user_documento_prefix");
+  const addUserDocNumberInput = document.getElementById("user_documento_number");
+  const addUserCorreoInput = document.getElementById("user_correo");
+  const addUserContrasenaInput = document.getElementById("user_contrasena");
+  const addUserDireccionInput = document.getElementById("direccion");
+  const addUserTelefonoPrefixInput = document.getElementById("telefono_prefix");
+  const addUserTelefonoNumberInput = document.getElementById("telefono_number");
+  const addUserFotoInput = document.getElementById("user_foto");
 
   // Input fields for Edit User Modal
   const editUserNameInput = document.getElementById("nombre_user_edit");
@@ -56,97 +56,105 @@ document.addEventListener("DOMContentLoaded", () => {
   // Function to show a specific section and hide others
   function showSection(sectionId) {
     document.querySelectorAll(".page").forEach((section) => {
-      section.classList.remove("active")
-    })
-    document.getElementById(sectionId).classList.add("active")
+      section.classList.remove("active");
+    });
+    document.getElementById(sectionId).classList.add("active");
 
     document.querySelectorAll(".sidebar ul li a").forEach((link) => {
-      link.classList.remove("active")
+      link.classList.remove("active");
       if (link.dataset.page === sectionId) {
-        // Changed from data-section to data-page
-        link.classList.add("active")
+        link.classList.add("active");
       }
-    })
+    });
   }
 
   // Handle sidebar navigation clicks
   document.querySelectorAll(".sidebar ul li a").forEach((link) => {
     link.addEventListener("click", function (e) {
-      e.preventDefault()
-      const pageId = this.dataset.page
+      e.preventDefault();
+      const pageId = this.dataset.page;
       if (pageId) {
-        showSection(pageId)
+        showSection(pageId);
       }
-    })
-  })
+    });
+  });
 
   // Initial load: show add-user section
-  showSection("add-user") // Changed to add-user as per HTML structure
+  showSection("add-user");
 
   // Load users for manage-users section
   function loadUsers() {
     fetch("/api/admin/users/list")
       .then((response) => response.json())
       .then((users) => {
-        const tableBody = document.querySelector("#users-table tbody")
-        tableBody.innerHTML = "" // Clear existing rows
+        const tableBody = document.querySelector("#users-table tbody");
+        tableBody.innerHTML = ""; // Clear existing rows
         users.forEach((user) => {
-          const row = tableBody.insertRow()
-          // Assuming user object has id, nombre, apellido, correo, rol, last_active_display, status
-          // Adjusting to match the HTML table headers
-          row.insertCell().textContent = user.nombre
-          row.insertCell().textContent = user.apellido
-          row.insertCell().textContent = user.correo
-          row.insertCell().textContent = user.rol.charAt(0).toUpperCase() + user.rol.slice(1) // Capitalize role
-          const statusOnlineCell = row.insertCell() // For Online/Offline status
-          statusOnlineCell.textContent = user.status_online
-          statusOnlineCell.classList.add(user.status_online === "Online" ? "status-online" : "status-offline")
-          row.insertCell().textContent = user.account_status // NEW: Account Status (Activo/Deshabilitado)
-          row.insertCell().textContent = user.last_active_display
+          const row = tableBody.insertRow();
+          row.insertCell().textContent = user.nombre;
+          row.insertCell().textContent = user.apellido;
+          row.insertCell().textContent = user.correo;
+          row.insertCell().textContent = user.rol.charAt(0).toUpperCase() + user.rol.slice(1);
+          const statusOnlineCell = row.insertCell();
+          statusOnlineCell.textContent = user.status_online;
+          statusOnlineCell.classList.add(user.status_online === "Online" ? "status-online" : "status-offline");
+          row.insertCell().textContent = user.account_status;
+          row.insertCell().textContent = user.last_active_display;
 
-          const actionsCell = row.insertCell()
-          if (user.id === 1) {
-            const editBtn = document.createElement("button")
-            editBtn.innerHTML = '<i class="fas fa-edit"></i>'
-            editBtn.classList.add("btn", "action-btn")
-            editBtn.title = "Editar Usuario"
-            editBtn.addEventListener("click", () => editUser(user.id))
-            actionsCell.appendChild(editBtn)
-          } else {
-            // Otros usuarios - mostrar botones normales
-            const editBtn = document.createElement("button")
-            editBtn.innerHTML = '<i class="fas fa-edit"></i>'
-            editBtn.classList.add("btn", "action-btn")
-            editBtn.title = "Editar Usuario"
-            editBtn.addEventListener("click", () => editUser(user.id))
-            actionsCell.appendChild(editBtn)
+          const actionsCell = row.insertCell();
+          const editBtn = document.createElement("button");
+          editBtn.innerHTML = '<i class="fas fa-edit"></i>';
+          editBtn.classList.add("btn", "action-btn");
+          editBtn.title = "Editar Usuario";
+          editBtn.addEventListener("click", () => editUser(user.id));
+          actionsCell.appendChild(editBtn);
 
-            // NEW: Conditionally render Disable or Enable button
-            if (user.id !== window.userInfo.id) {
-              // Cannot disable/enable self
-              if (user.account_status === "Activo") {
-                const disableBtn = document.createElement("button")
-                disableBtn.innerHTML = '<i class="fas fa-user-slash"></i>' // Icon for disable
-                disableBtn.classList.add("btn", "action-btn", "delete") // Using 'delete' class for red color
-                disableBtn.title = "Deshabilitar Usuario"
-                disableBtn.addEventListener("click", () => disableUser(user.id, user.nombre))
-                actionsCell.appendChild(disableBtn)
-              } else {
-                const enableBtn = document.createElement("button")
-                enableBtn.innerHTML = '<i class="fas fa-user-check"></i>' // Icon for enable
-                enableBtn.classList.add("btn", "action-btn") // Default color
-                enableBtn.title = "Habilitar Usuario"
-                enableBtn.addEventListener("click", () => enableUser(user.id, user.nombre))
-                actionsCell.appendChild(enableBtn)
-              }
+          if (user.id !== 1 && user.id !== window.userInfo.id) {
+            if (user.account_status === "Activo") {
+              const disableBtn = document.createElement("button");
+              disableBtn.innerHTML = '<i class="fas fa-user-slash"></i>';
+              disableBtn.classList.add("btn", "action-btn", "delete");
+              disableBtn.title = "Deshabilitar Usuario";
+              disableBtn.addEventListener("click", () => disableUser(user.id, user.nombre));
+              actionsCell.appendChild(disableBtn);
+            } else {
+              const enableBtn = document.createElement("button");
+              enableBtn.innerHTML = '<i class="fas fa-user-check"></i>';
+              enableBtn.classList.add("btn", "action-btn");
+              enableBtn.title = "Habilitar Usuario";
+              enableBtn.addEventListener("click", () => enableUser(user.id, user.nombre));
+              actionsCell.appendChild(enableBtn);
             }
           }
-        })
+        });
       })
       .catch((error) => {
-        console.error("Error loading users:", error)
-        displayFlashMessage("Error al cargar usuarios.", "error")
+        console.error("Error loading users:", error);
+        displayFlashMessage("Error al cargar usuarios.", "error");
+      });
+  }
+
+  // Logout functionality
+  if (logoutButton) {
+    logoutButton.addEventListener("click", (e) => {
+      e.preventDefault();
+      fetch("/api/logout", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
       })
+        .then((response) => response.json())
+        .then((data) => {
+          if (data.success) {
+            window.location.href = "/";
+          } else {
+            displayFlashMessage("Error al cerrar sesión: " + data.message, "error");
+          }
+        })
+        .catch((error) => {
+          console.error("Error:", error);
+          displayFlashMessage("Error de red al cerrar sesión.", "error");
+        });
+    });
   }
 
   // Logout functionality
@@ -174,41 +182,46 @@ document.addEventListener("DOMContentLoaded", () => {
     })
   }
 
-  // --- Flash Message Display ---
+  // Flash Message Display
   function displayFlashMessage(message, type) {
-    const flashMessagesDiv = document.getElementById("flash-messages")
-    if (!flashMessagesDiv) return
-
-    // Clear all existing messages before adding a new one
-    flashMessagesDiv.innerHTML = "" // ADD THIS LINE
-
-    const alertDiv = document.createElement("div")
-    alertDiv.classList.add("alert", `alert-${type}`, "fade-in")
+    const flashMessagesDiv = document.getElementById("flash-messages");
+    if (!flashMessagesDiv) return;
+    flashMessagesDiv.innerHTML = "";
+    const alertDiv = document.createElement("div");
+    alertDiv.className = `alert alert-${type} fade-in`;
     alertDiv.innerHTML = `
-          <div class="alert-content">
-              <i class="fas ${type === "success" ? "fa-check-circle" : type === "error" ? "fa-times-circle" : type === "warning" ? "fa-exclamation-triangle" : "fa-info-circle"}"></i>
-              <span>${message}</span>
-          </div>
-          <button class="alert-close">&times;</button>
-      `
-    flashMessagesDiv.appendChild(alertDiv)
-
-    // Close button functionality
+      <div class="alert-content">
+        <i class="fas ${type === "success" ? "fa-check-circle" : "fa-times-circle"}"></i>
+        <span>${message}</span>
+      </div>
+      <button class="alert-close">&times;</button>
+    `;
+    flashMessagesDiv.appendChild(alertDiv);
     alertDiv.querySelector(".alert-close").addEventListener("click", () => {
-      alertDiv.classList.remove("fade-in")
-      alertDiv.classList.add("fade-out")
-      alertDiv.addEventListener("animationend", () => alertDiv.remove())
-    })
-
-    // Auto-remove after 5 seconds
+      alertDiv.classList.remove("fade-in");
+      alertDiv.classList.add("fade-out");
+      alertDiv.addEventListener("animationend", () => alertDiv.remove());
+    });
     setTimeout(() => {
       if (alertDiv.parentNode) {
-        alertDiv.classList.remove("fade-in")
-        alertDiv.classList.add("fade-out")
-        alertDiv.addEventListener("animationend", () => alertDiv.remove())
+        alertDiv.classList.remove("fade-in");
+        alertDiv.classList.add("fade-out");
+        alertDiv.addEventListener("animationend", () => alertDiv.remove());
       }
-    }, 5000)
+    }, 5000);
   }
+
+  // Close Modals
+  closeModalButtons.forEach((button) => {
+    button.addEventListener("click", () => {
+      if (userModal) userModal.style.display = "none";
+    });
+  });
+  window.addEventListener("click", (event) => {
+    if (userModal && event.target == userModal) {
+      userModal.style.display = "none";
+    }
+  });
 
   // Clear existing flash messages on page load (if any from Flask)
   const existingFlashMessages = document.querySelectorAll("#flash-messages .alert")
@@ -687,8 +700,8 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   })
 
-  // Load users when the manage-users section is activated
-  document.querySelector('a[data-page="manage-users"]').addEventListener("click", loadUsers)
+  // Load users when manage-users section is activated
+  document.querySelector('a[data-page="manage-users"]').addEventListener("click", loadUsers);
 
   // Edit User Function
   function editUser(userId) {
@@ -696,56 +709,84 @@ document.addEventListener("DOMContentLoaded", () => {
       .then((response) => response.json())
       .then((user) => {
         if (user.success === false) {
-          displayFlashMessage("Error: " + user.message, "error")
-          return
+          displayFlashMessage("Error: " + user.message, "error");
+          return;
         }
-        userModalTitle.textContent = "Editar Usuario"
-        userIdInput.value = user.id
-        editUserNameInput.value = user.nombre
-        editUserApellidoInput.value = user.apellido
+        userModalTitle.textContent = "Editar Usuario";
+        userIdInput.value = user.id;
+        editUserNameInput.value = user.nombre;
+        editUserApellidoInput.value = user.apellido;
 
-        // Split cedula into prefix and number for edit form
-        const cedulaParts = user.cedula.split("-")
+        const cedulaParts = user.cedula.split("-");
         if (cedulaParts.length === 2) {
-          editUserDocPrefixInput.value = cedulaParts[0]
-          editUserDocNumberInput.value = cedulaParts[1]
-        } else {
-          editUserDocPrefixInput.value = "V" // Default
-          editUserDocNumberInput.value = user.cedula // Fallback
+          editUserDocPrefixInput.value = cedulaParts[0];
+          editUserDocNumberInput.value = cedulaParts[1];
         }
 
-        editUserCorreoInput.value = user.correo
-        editUserDireccionInput.value = user.direccion || "" // NEW: Populate direccion
+        editUserCorreoInput.value = user.correo;
+        editUserDireccionInput.value = user.direccion || "";
 
-        // Split telefono into prefix and number for edit form
         if (user.telefono) {
-          const phoneStr = user.telefono.toString()
+          const phoneStr = user.telefono.toString();
           if (phoneStr.length === 11) {
-            const prefix = phoneStr.substring(0, 4)
-            const number = phoneStr.substring(4)
-            editUserTelefonoPrefixInput.value = prefix
-            editUserTelefonoNumberInput.value = number
+            const prefix = phoneStr.substring(0, 4);
+            const number = phoneStr.substring(4);
+            editUserTelefonoPrefixInput.value = prefix;
+            editUserTelefonoNumberInput.value = number;
           }
         }
 
-        document.getElementById("rol_user_edit").value = user.rol
-        editUserStatusInput.value = user.status // NEW: Populate status
+        document.getElementById("rol_user_edit").value = user.rol;
+        editUserStatusInput.value = user.status;
 
-        // Display current photo
         if (user.foto) {
-          currentFotoPreview.src = user.foto
-          currentFotoPreview.style.display = "block"
+          currentFotoPreview.src = user.foto;
+          currentFotoPreview.style.display = "block";
         } else {
-          currentFotoPreview.src = ""
-          currentFotoPreview.style.display = "none"
+          currentFotoPreview.src = "";
+          currentFotoPreview.style.display = "none";
         }
-
-        userModal.style.display = "block"
+        userModal.style.display = "block";
       })
       .catch((error) => {
-        console.error("Error fetching user for edit:", error)
-        displayFlashMessage("Error al cargar datos del usuario para edición.", "error")
-      })
+        console.error("Error fetching user for edit:", error);
+        displayFlashMessage("Error al cargar datos del usuario para edición.", "error");
+      });
+  }
+
+  // Handle Edit User Form Submission
+  if (userForm) {
+    userForm.addEventListener("submit", (e) => {
+        e.preventDefault();
+        const formData = new FormData(userForm);
+        const userId = userIdInput.value;
+
+        // Manually construct cedula and telefono from parts
+        const cedula = `${editUserDocPrefixInput.value}-${editUserDocNumberInput.value.trim()}`;
+        const telefono = `${editUserTelefonoPrefixInput.value}${editUserTelefonoNumberInput.value.trim()}`;
+        
+        formData.set('cedula', cedula); // Use .set to overwrite if exists, or add if not
+        formData.set('telefono', telefono);
+
+        fetch(`/api/admin/users/${userId}`, {
+            method: "POST",
+            body: formData,
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                displayFlashMessage(data.message, "success");
+                userModal.style.display = "none";
+                loadUsers();
+            } else {
+                displayFlashMessage("Error: " + data.message, "error");
+            }
+        })
+        .catch(error => {
+            console.error("Error updating user:", error);
+            displayFlashMessage("Error de red o del servidor al actualizar usuario.", "error");
+        });
+    });
   }
 
   // Handle Edit User Form Submission
@@ -1080,5 +1121,6 @@ document.addEventListener("DOMContentLoaded", () => {
     5 * 60 * 1000,
   ) // Every 5 minutes
 })
+
 
 
