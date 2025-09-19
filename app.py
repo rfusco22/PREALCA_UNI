@@ -4151,6 +4151,7 @@ def deny_material_request(request_id):
        return jsonify({'success': False, 'message': f'Error al denegar solicitud de material: {str(e)}'}), 500
    finally:
        connection.close()
+       
 @app.route('/api/costo_diseno', methods=['GET'])
 def get_costo_diseno():
     if session.get('user_role') not in ['administrador']:
@@ -4159,6 +4160,7 @@ def get_costo_diseno():
     connection = get_db_connection()
     try:
         with connection.cursor() as cursor:
+            # Crea la tabla de precios si no existe (buena práctica para asegurar que esté disponible)
             create_table_sql = """
             CREATE TABLE IF NOT EXISTS concrete_design_precios (
                 id INT AUTO_INCREMENT PRIMARY KEY,
@@ -4175,7 +4177,7 @@ def get_costo_diseno():
             # Obtener datos de inventario real usando la función existente
             inventario_disenos = calcular_inventario_disenos()
             
-            # Obtener precios unitarios de la tabla concrete_design_precios
+            # Obtener todos los diseños y sus precios unitarios guardados
             sql = """
             SELECT 
                 cd.id,
@@ -4188,19 +4190,25 @@ def get_costo_diseno():
             ORDER BY cd.id ASC
             """
             cursor.execute(sql)
-            disenos = cursor.fetchall()
+            disenos_db = cursor.fetchall()
             
-            # Combinar datos de inventario con precios
-            for diseno in disenos:
+            # Construir la lista final, asegurando que los números sean compatibles con JSON
+            disenos_serializable = []
+            for diseno in disenos_db:
                 design_id = diseno['id']
-                if design_id in inventario_disenos:
-                    # Usar M3 disponible real del inventario
-                    diseno['m3_disponible'] = inventario_disenos[design_id]['m3_posibles']
-                else:
-                    # Si no hay datos de inventario, usar 0
-                    diseno['m3_disponible'] = 0
+                m3_disponible = inventario_disenos.get(design_id, {}).get('m3_posibles', 0)
+                
+                disenos_serializable.append({
+                    'id': diseno['id'],
+                    'nombre': diseno['nombre'],
+                    'resistencia': diseno['resistencia'],
+                    'asentamiento': diseno['asentamiento'],
+                    'precio_unitario': float(diseno['precio_unitario']), # <-- Conversión clave para evitar el error
+                    'm3_disponible': m3_disponible
+                })
             
-            return jsonify(disenos)
+        return jsonify(disenos_serializable)
+        
     except Exception as e:
         print(f"Error al obtener costo por diseño: {str(e)}")
         return jsonify({'success': False, 'message': f'Error al obtener datos: {str(e)}'}), 500
