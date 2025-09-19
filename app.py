@@ -1893,7 +1893,6 @@ def delete_cliente_by_id(id):
  finally:
   connection.close()
 
-# API para camiones
 @app.route('/api/camiones', methods=['GET'])
 def get_camiones():
  connection = get_db_connection()
@@ -1901,8 +1900,22 @@ def get_camiones():
   with connection.cursor() as cursor:
    sql = "SELECT *, current_odometer FROM camiones"
    cursor.execute(sql)
-   camiones = cursor.fetchall()
-  return jsonify(camiones)
+   camiones_db = cursor.fetchall()
+
+  # Construir la lista manualmente para ser compatible con JSON
+  camiones_serializable = []
+  for camion in camiones_db:
+      camiones_serializable.append({
+          'id': camion['id'],
+          'marca': camion['marca'],
+          'modelo': camion['modelo'],
+          'placa': camion['placa'],
+          'capacidad': float(camion['capacidad']) if camion['capacidad'] is not None else 0.0, # Conversión clave
+          'estado': camion['estado'],
+          'current_odometer': int(camion['current_odometer']) if camion['current_odometer'] is not None else 0
+      })
+
+  return jsonify(camiones_serializable)
  except Exception as e:
   print(f"Error al obtener camiones: {str(e)}")
   return jsonify({'error': str(e)}), 500
