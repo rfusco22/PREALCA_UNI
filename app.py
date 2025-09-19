@@ -673,25 +673,39 @@ def add_concrete_design():
 
 @app.route('/api/concrete_designs/<int:design_id>', methods=['GET'])
 def get_concrete_design_by_id(design_id):
- connection = get_db_connection()
- try:
-  with connection.cursor() as cursor:
-   sql_design = "SELECT id, nombre, resistencia, asentamiento FROM concrete_designs WHERE id = %s"
-   cursor.execute(sql_design, (design_id,))
-   design = cursor.fetchone()
+    connection = get_db_connection()
+    try:
+        with connection.cursor() as cursor:
+            sql_design = "SELECT id, nombre, resistencia, asentamiento FROM concrete_designs WHERE id = %s"
+            cursor.execute(sql_design, (design_id,))
+            design = cursor.fetchone()
 
-   if not design:
-    return jsonify({'success': False, 'message': 'Diseño de concreto no encontrado'}), 404
+            if not design:
+                return jsonify({'success': False, 'message': 'Diseño de concreto no encontrado'}), 404
 
-   sql_materials = "SELECT id, material_name, quantity_kg FROM concrete_design_materials WHERE design_id = %s"
-   cursor.execute(sql_materials, (design_id,))
-   design['materiales'] = cursor.fetchall()
-  return jsonify(design)
- except Exception as e:
-  print(f"Error al obtener diseño de concreto por ID: {str(e)}")
-  return jsonify({'success': False, 'message': f'Error al obtener diseño de concreto: {str(e)}'}), 500
- finally:
-  connection.close()
+            # Obtener los materiales
+            sql_materials = "SELECT id, material_name, quantity_kg FROM concrete_design_materials WHERE design_id = %s"
+            cursor.execute(sql_materials, (design_id,))
+            materials_db = cursor.fetchall()
+
+            # Serializar los materiales manualmente para evitar errores de tipo
+            materials_serializable = []
+            for material in materials_db:
+                materials_serializable.append({
+                    'id': material['id'],
+                    'material_name': material['material_name'],
+                    'quantity_kg': float(material['quantity_kg']) if material['quantity_kg'] is not None else 0.0
+                })
+
+            design['materiales'] = materials_serializable
+
+        return jsonify(design)
+
+    except Exception as e:
+        print(f"Error al obtener diseño de concreto por ID: {str(e)}")
+        return jsonify({'success': False, 'message': f'Error al obtener diseño de concreto: {str(e)}'}), 500
+    finally:
+        connection.close()
 
 @app.route('/api/concrete_designs/<int:design_id>', methods=['PUT'])
 def update_concrete_design(design_id):
