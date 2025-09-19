@@ -3566,7 +3566,7 @@ def get_quotation_by_id(quotation_id):
             sql_items = "SELECT code, description, quantity, unit_price, item_total FROM cotizacion_items WHERE quotation_id = %s"
             cursor.execute(sql_items, (quotation_id,))
             items_db = cursor.fetchall()
-
+            
             # Serializar la lista de items manualmente
             items_serializable = []
             for item in items_db:
@@ -3577,7 +3577,7 @@ def get_quotation_by_id(quotation_id):
                     'unit_price': float(item['unit_price']) if item['unit_price'] is not None else 0.0,
                     'item_total': float(item['item_total']) if item['item_total'] is not None else 0.0,
                 })
-
+            
             quotation['items'] = items_serializable
 
             # Serializar los campos numéricos y de fecha del objeto principal
