@@ -1502,28 +1502,46 @@ function printSupplierPurchaseOrderContent(orderData, itemsData) {
   }
 }
 
-// NEW: Load suppliers for the purchase guide form
-let allSuppliers = []
-const allSupplierMaterials = {}
+// Al inicio del archivo, asegúrate que la variable esté inicializada como un array vacío.
+let allSuppliers = [];
 
+// Reemplaza la función loadSuppliersForPurchaseGuide con esta versión mejorada
 function loadSuppliersForPurchaseGuide() {
   fetch("/api/proveedores")
-    .then((response) => response.json())
+    .then((response) => {
+        if (!response.ok) { // Revisa si la respuesta no fue exitosa (ej. error 500)
+            throw new Error(`Error HTTP: ${response.status}`);
+        }
+        return response.json();
+    })
     .then((data) => {
-      allSuppliers = data
-      const supplierSelect = document.getElementById("po_supplier_id")
+      // Revisa si la data recibida es realmente un array antes de usarla
+      if (!Array.isArray(data)) {
+          console.error("Error: La respuesta de /api/proveedores no es un array.", data);
+          displayFlashMessage("Error al procesar la lista de proveedores.", "error");
+          allSuppliers = []; // Importante: resetea a un array vacío si hay error
+          return;
+      }
+      
+      allSuppliers = data;
+      const supplierSelect = document.getElementById("po_supplier_id");
       if (supplierSelect) {
-        supplierSelect.innerHTML = '<option value="">Seleccione proveedor</option>'
+        supplierSelect.innerHTML = '<option value="">Seleccione proveedor</option>';
         data.forEach((supplier) => {
-          const option = document.createElement("option")
-          option.value = supplier.id
-          option.textContent = supplier.nombre
-          supplierSelect.appendChild(option)
-          allSupplierMaterials[supplier.id] = supplier.materiales // Store materials by supplier ID
-        })
+          const option = document.createElement("option");
+          option.value = supplier.id;
+          option.textContent = supplier.nombre;
+          supplierSelect.appendChild(option);
+          // La lógica de allSupplierMaterials se mantiene
+          allSupplierMaterials[supplier.id] = supplier.materiales;
+        });
       }
     })
-    .catch((error) => console.error("Error al cargar proveedores:", error))
+    .catch((error) => {
+      console.error("Error al cargar proveedores:", error);
+      displayFlashMessage("No se pudieron cargar los proveedores. " + error.message, "error");
+      allSuppliers = []; // Importante: Asegura que siga siendo un array en caso de fallo total del fetch
+    });
 }
 
 // REEMPLAZA LA FUNCIÓN loadPendingMaterialRequestsTable EXISTENTE CON ESTA VERSIÓN
