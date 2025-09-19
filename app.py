@@ -2635,21 +2635,34 @@ def deny_despacho(dispatch_id):
  finally:
   connection.close()
 
-# API para inventario
 @app.route('/api/inventario', methods=['GET'])
 def get_inventario():
- connection = get_db_connection()
- try:
-  with connection.cursor() as cursor:
-   sql = "SELECT id, nombre, cantidad, unidad, minimo, densidad FROM inventario"
-   cursor.execute(sql)
-   inventario = cursor.fetchall()
-  return jsonify(inventario)
- except Exception as e:
-  print(f"Error al obtener inventario: {str(e)}")
-  return jsonify({'error': str(e)}), 500
- finally:
-  connection.close()
+    connection = get_db_connection()
+    try:
+        with connection.cursor() as cursor:
+            sql = "SELECT id, nombre, cantidad, unidad, minimo, densidad FROM inventario"
+            cursor.execute(sql)
+            inventario_db = cursor.fetchall()
+
+        # Convertir manualmente los datos a tipos compatibles con JSON
+        inventario_serializable = []
+        for item in inventario_db:
+            inventario_serializable.append({
+                'id': item['id'],
+                'nombre': item['nombre'],
+                'cantidad': float(item['cantidad']) if item['cantidad'] is not None else 0.0,
+                'unidad': item['unidad'],
+                'minimo': float(item['minimo']) if item['minimo'] is not None else 0.0,
+                'densidad': float(item['densidad']) if item['densidad'] is not None else 1.0
+            })
+
+        return jsonify(inventario_serializable)
+
+    except Exception as e:
+        print(f"Error al obtener inventario: {str(e)}")
+        return jsonify({'error': str(e)}), 500
+    finally:
+        connection.close()
 
 @app.route('/api/inventario', methods=['POST'])
 def add_inventario():
