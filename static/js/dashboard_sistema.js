@@ -51,6 +51,10 @@ document.addEventListener("DOMContentLoaded", () => {
   const editUserFotoInput = document.getElementById("foto_user_edit")
   const editUserStatusInput = document.getElementById("status_user_edit") // NEW
 
+  const searchUserInput = document.getElementById("search-user-input")
+  const userSearchButton = document.getElementById("user-search-button")
+  const userTable = document.getElementById("users-table")
+
   // Function to show a specific section and hide others
   function showSection(sectionId) {
     document.querySelectorAll(".page").forEach((section) => {
@@ -80,6 +84,15 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // Initial load: show add-user section
   showSection("add-user") // Changed to add-user as per HTML structure
+
+  if (logoutButton) {
+    logoutButton.addEventListener("click", (e) => {
+      e.preventDefault()
+      if (confirm("¿Está seguro de que desea cerrar sesión?")) {
+        window.location.href = "/logout"
+      }
+    })
+  }
 
   // Load users for manage-users section
   function loadUsers() {
@@ -143,31 +156,67 @@ document.addEventListener("DOMContentLoaded", () => {
       })
       .catch((error) => {
         console.error("Error loading users:", error)
-        displayFlashMessage("Error al cargar usuarios.", "error")
+        displayFlashMessage("Error al cargar la lista de usuarios.", "error")
       })
   }
 
-  // Logout functionality
-  if (logoutButton) {
-    logoutButton.addEventListener("click", (e) => {
+  if (addUserForm) {
+    addUserForm.addEventListener("submit", (e) => {
       e.preventDefault()
-      fetch("/api/logout", {
+
+      // Clear previous validation messages
+      document.querySelectorAll(".field-validation-message").forEach((msg) => {
+        msg.textContent = ""
+        msg.style.display = "none"
+      })
+
+      // Basic client-side validation
+      let isValid = true
+
+      if (!addUserNameInput.value.trim()) {
+        showValidationMessage("user_nombre_validation_message", "El nombre es requerido")
+        isValid = false
+      }
+
+      if (!addUserApellidoInput.value.trim()) {
+        showValidationMessage("user_apellido_validation_message", "El apellido es requerido")
+        isValid = false
+      }
+
+      if (!addUserCorreoInput.value.trim()) {
+        showValidationMessage("user_correo_validation_message", "El correo es requerido")
+        isValid = false
+      }
+
+      if (!addUserContrasenaInput.value || addUserContrasenaInput.value.length < 8) {
+        showValidationMessage("user_contrasena_validation_message", "La contraseña debe tener al menos 8 caracteres")
+        isValid = false
+      }
+
+      if (!isValid) return
+
+      // Submit form data
+      const formData = new FormData(addUserForm)
+
+      fetch("/api/admin/users", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        body: formData,
       })
         .then((response) => response.json())
         .then((data) => {
           if (data.success) {
-            window.location.href = "/" // Redirect to login page
+            displayFlashMessage(data.message, "success")
+            addUserForm.reset()
+            // Optionally switch to manage users view
+            showSection("manage-users")
+            loadUsers()
           } else {
-            displayFlashMessage("Error al cerrar sesión: " + data.message, "error")
+            displayFlashMessage("Error: " + data.message, "error")
           }
         })
         .catch((error) => {
-          console.error("Error:", error)
-          displayFlashMessage("Error de red al cerrar sesión.", "error")
+          console.error("Error adding user:", error)
+          displayFlashMessage("Error de red o del servidor al agregar usuario.", "error")
         })
     })
   }
@@ -699,7 +748,10 @@ document.addEventListener("DOMContentLoaded", () => {
   })
 
   // Load users when the manage-users section is activated
-  document.querySelector('a[data-page="manage-users"]').addEventListener("click", loadUsers)
+  const manageUsersLink = document.querySelector('a[data-page="manage-users"]')
+  if (manageUsersLink) {
+    manageUsersLink.addEventListener("click", loadUsers)
+  }
 
   // Edit User Function
   function editUser(userId) {
@@ -778,57 +830,35 @@ document.addEventListener("DOMContentLoaded", () => {
     e.preventDefault()
 
     // Client-side validation for edit form
-    const isNameValid = validateName(editUserNameInput, document.getElementById("nombre_user_edit_validation_message"))
-    const isApellidoValid = validateName(
-      editUserApellidoInput,
-      document.getElementById("apellido_user_edit_validation_message"),
-    )
-    const isDocumentValid = validateDocument(
-      editUserDocPrefixInput,
-      editUserDocNumberInput,
-      document.getElementById("documento_user_edit_validation_message"),
-    )
-    const isEmailValid = validateEmail(
-      editUserCorreoInput,
-      document.getElementById("correo_user_edit_validation_message"),
-    )
-    const isAddressValid = validateAddress(
-      editUserDireccionInput,
-      document.getElementById("direccion_user_edit_validation_message"),
-    ) // NEW
-    const isPhoneValid = validatePhone(
-      editUserTelefonoPrefixInput,
-      editUserTelefonoNumberInput,
-      document.getElementById("telefono_user_edit_validation_message"),
-    ) // NEW
-    // No password validation on edit unless a password field is explicitly added and required
-    const isFotoValid = validateFile(editUserFotoInput, document.getElementById("foto_user_edit_validation_message"))
+    let isValid = true
 
-    if (
-      !isNameValid ||
-      !isApellidoValid ||
-      !isDocumentValid ||
-      !isEmailValid ||
-      !isAddressValid ||
-      !isPhoneValid ||
-      !isFotoValid
-    ) {
-      // NEW: Added address and phone
-      displayFlashMessage("Por favor, corrija los errores en el formulario de edición.", "error")
-      return
+    // Clear previous validation messages
+    document.querySelectorAll(".field-validation-message").forEach((msg) => {
+      msg.textContent = ""
+      msg.style.display = "none"
+    })
+
+    if (!editUserNameInput.value.trim()) {
+      showValidationMessage("nombre_user_edit_validation_message", "El nombre es requerido")
+      isValid = false
     }
 
+    if (!editUserApellidoInput.value.trim()) {
+      showValidationMessage("apellido_user_edit_validation_message", "El apellido es requerido")
+      isValid = false
+    }
+
+    if (!editUserCorreoInput.value.trim()) {
+      showValidationMessage("correo_user_edit_validation_message", "El correo es requerido")
+      isValid = false
+    }
+
+    if (!isValid) return
+
     const formData = new FormData(userForm)
-    const userId = userIdInput.value
 
-    // Add the combined document to formData
-    formData.append("cedula", `${editUserDocPrefixInput.value}-${editUserDocNumberInput.value.trim()}`)
-
-    // Add the combined phone to formData
-    formData.append("telefono", `${editUserTelefonoPrefixInput.value}${editUserTelefonoNumberInput.value.trim()}`)
-
-    fetch(`/api/admin/users/${userId}`, {
-      method: "POST", // Backend uses POST for update
+    fetch("/api/admin/users", {
+      method: "POST",
       body: formData,
     })
       .then((response) => response.json())
@@ -845,6 +875,15 @@ document.addEventListener("DOMContentLoaded", () => {
         console.error("Error updating user:", error)
         displayFlashMessage("Error de red o del servidor al actualizar usuario.", "error")
       })
+  }
+
+  function showValidationMessage(elementId, message) {
+    const element = document.getElementById(elementId)
+    if (element) {
+      element.textContent = message
+      element.style.display = "block"
+      element.style.color = "#dc3545"
+    }
   }
 
   // MODIFIED: Renamed from deleteUser to disableUser
@@ -905,148 +944,6 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 
-  // Handle photo preview for Add User form
-  if (fotoInput) {
-    fotoInput.addEventListener("change", function () {
-      const previewElement = document.getElementById("user_foto_preview") || document.createElement("img")
-      if (!document.getElementById("user_foto_preview")) {
-        previewElement.id = "user_foto_preview"
-        previewElement.style.width = "100px"
-        previewElement.style.height = "100px"
-        previewElement.style.objectFit = "cover"
-        previewElement.style.borderRadius = "50%"
-        previewElement.style.marginTop = "5px"
-        // Insert it after the file input's parent form-group
-        this.closest(".form-group").appendChild(previewElement)
-      }
-
-      if (this.files && this.files[0]) {
-        const reader = new FileReader()
-        reader.onload = (e) => {
-          previewElement.src = e.target.result
-          previewElement.style.display = "block"
-        }
-        reader.readAsDataURL(this.files[0])
-      } else {
-        previewElement.style.display = "none"
-        previewElement.src = ""
-      }
-    })
-  }
-
-  // Handle photo preview for Edit User form
-  if (editUserFotoInput) {
-    editUserFotoInput.addEventListener("change", function () {
-      if (this.files && this.files[0]) {
-        const reader = new FileReader()
-        reader.onload = (e) => {
-          currentFotoPreview.src = e.target.result
-        }
-        reader.readAsDataURL(this.files[0])
-      }
-    })
-  }
-
-  // --- Profile Management (Usuario Logueado) ---
-  // (Assuming these are handled by dashboard_admin.js or another script)
-  // Open Edit Profile Modal
-  if (editProfileBtn) {
-    editProfileBtn.addEventListener("click", () => {
-      // Pre-fill form with current user data (already in HTML via Jinja)
-      // Ensure the photo preview is correct
-      const currentPhotoSrc = document.querySelector(".profile-avatar").src
-      if (editCurrentFotoPreview) editCurrentFotoPreview.src = currentPhotoSrc
-      if (editProfileModal) editProfileModal.style.display = "block"
-    })
-  }
-
-  // Handle Edit Profile Form Submission
-  if (editProfileForm) {
-    editProfileForm.addEventListener("submit", (e) => {
-      e.preventDefault()
-
-      const formData = new FormData(editProfileForm)
-      // The current user's ID is available in the session, no need to pass it from form
-      // The backend will use session['user_id']
-
-      fetch("/api/admin/users/" + window.userInfo.id, {
-        // Assuming this endpoint updates the logged-in user
-        method: "POST",
-        body: formData,
-      })
-        .then((response) => response.json())
-        .then((data) => {
-          if (data.success) {
-            displayFlashMessage(data.message, "success")
-            if (editProfileModal) editProfileModal.style.display = "none"
-            // Reload page to reflect changes in header/profile section
-            window.location.reload()
-          } else {
-            displayFlashMessage("Error al actualizar perfil: " + data.message, "error")
-          }
-        })
-        .catch((error) => {
-          console.error("Error updating profile:", error)
-          displayFlashMessage("Error de red o del servidor al actualizar perfil.", "error")
-        })
-    })
-  }
-
-  // Open Change Password Modal
-  if (changePasswordBtn) {
-    changePasswordBtn.addEventListener("click", () => {
-      if (changePasswordForm) changePasswordForm.reset()
-      if (changePasswordModal) changePasswordModal.style.display = "block"
-    })
-  }
-
-  // Handle Change Password Form Submission
-  if (changePasswordForm) {
-    changePasswordForm.addEventListener("submit", (e) => {
-      e.preventDefault()
-
-      const currentPassword = document.getElementById("current-password").value
-      const newPassword = document.getElementById("new-password").value
-      const confirmNewPassword = document.getElementById("confirm-new-password").value
-
-      if (newPassword !== confirmNewPassword) {
-        displayFlashMessage("La nueva contraseña y la confirmación no coinciden.", "error")
-        return
-      }
-
-      fetch("/api/change_password", {
-        // Assuming a new API endpoint for changing password
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          current_password: currentPassword,
-          new_password: newPassword,
-        }),
-      })
-        .then((response) => response.json())
-        .then((data) => {
-          if (data.success) {
-            displayFlashMessage(data.message, "success")
-            if (changePasswordModal) changePasswordModal.style.display = "none"
-            if (changePasswordForm) changePasswordForm.reset()
-          } else {
-            displayFlashMessage("Error al cambiar contraseña: " + data.message, "error")
-          }
-        })
-        .catch((error) => {
-          console.error("Error changing password:", error)
-          displayFlashMessage("Error de red o del servidor al cambiar contraseña.", "error")
-        })
-    })
-  }
-
-  // User Search Functionality
-  const searchUserInput = document.getElementById("search-user-input")
-  const userSearchButton = document.getElementById("user-search-button")
-  const userTable = document.getElementById("users-table") // Corrected ID
-
   function filterUsers() {
     const searchTerm = searchUserInput.value.toLowerCase()
     const rows = userTable.querySelectorAll("tbody tr")
@@ -1056,7 +953,7 @@ document.addEventListener("DOMContentLoaded", () => {
       const apellido = row.cells[1].textContent.toLowerCase() // Apellido
       const email = row.cells[2].textContent.toLowerCase() // Correo
       const role = row.cells[3].textContent.toLowerCase() // Rol
-      const accountStatus = row.cells[4].textContent.toLowerCase() // Estado de Cuenta (Activo/Deshabilitado)
+      const accountStatus = row.cells[5].textContent.toLowerCase() // Estado de Cuenta (Activo/Deshabilitado) - Fixed index
 
       if (
         name.includes(searchTerm) ||
