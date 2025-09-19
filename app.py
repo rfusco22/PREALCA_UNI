@@ -3909,19 +3909,26 @@ def list_ordenes_compra_proveedor():
                ORDER BY o.fecha DESC, o.po_number DESC
            """
            cursor.execute(sql)
-           orders = cursor.fetchall()
+           orders_db = cursor.fetchall()
 
-       # Format date for each order
-       for order in orders:
-           if isinstance(order['fecha'], (datetime, date)):
-               order['fecha'] = order['fecha'].strftime('%d/%m/%Y') # Changed format
+       # Construir la lista manualmente para asegurar compatibilidad con JSON
+       orders_serializable = []
+       for order in orders_db:
+           orders_serializable.append({
+               'id': order['id'],
+               'po_number': order['po_number'],
+               'fecha': order['fecha'].strftime('%d/%m/%Y') if isinstance(order['fecha'], (datetime, date)) else order['fecha'],
+               'proveedor_nombre': order['proveedor_nombre'],
+               'total': float(order['total']) if order['total'] is not None else 0.0, # <-- Conversión clave
+               'status': order['status']
+           })
 
-       return jsonify(orders)
+       return jsonify(orders_serializable)
    except Exception as e:
        print(f"Error al listar órdenes de compra: {str(e)}")
        return jsonify({'success': False, 'message': f'Error al listar órdenes de compra: {str(e)}'}), 500
    finally:
-       connection.close() # Ensure connection is closed
+       connection.close()
 
 @app.route('/api/ordenes_compra_proveedor/<int:order_id>', methods=['GET'])
 def get_orden_compra_proveedor(order_id):
