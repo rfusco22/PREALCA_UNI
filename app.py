@@ -53,12 +53,12 @@ MINIMO_DOSIFICACION_M3 = 200
 
 # Definiciones de intervalos de mantenimiento preventivo
 MANTENIMIENTO_INTERVALOS = {
-'Cambio de Aceite': {'km': 10000, 'months': 6},
-'Revisión General': {'km': 50000, 'months': 12},
-'Frenos': {'km': 30000, 'months': None},
-'Neumáticos': {'km': 20000, 'months': None},
-'Inspección de Fluidos': {'km': 15000, 'months': 3},
-'Reemplazo de Filtros': {'km': 25000, 'months': 9}
+    'Cambio de Aceite': {'km': 10000, 'months': 3},
+    'Revisión General': {'km': 50000, 'months': 6},
+    'Frenos': {'km': 30000, 'months': 3},
+    'Neumáticos': {'km': 20000, 'months': 3}, # <--- Mantenimiento de Neumáticos
+    'Inspección de Fluidos': {'km': 15000, 'months': 3},
+    'Reemplazo de Filtros': {'km': 25000, 'months': 6}
 }
 
 # Aditivos universales que se descuentan por cada m³ de concreto producido,
