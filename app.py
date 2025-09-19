@@ -3045,7 +3045,7 @@ def update_mantenimiento(id):
 
 @app.route('/api/mantenimiento/delete/<int:id>', methods=['POST'])
 def delete_mantenimiento(id):
- if session.get('user_role') not in ['administrador']: # Removed 'gerencia'
+ if session.get('user_role') not in ['registro']: # Removed 'gerencia'
   return jsonify({'success': False, 'message': 'Acceso denegado'}), 403
 
  connection = get_db_connection()
