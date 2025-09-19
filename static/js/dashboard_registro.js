@@ -422,15 +422,21 @@ function loadAlertsTable() {
 }
 
 function loadCamionesTable() {
-  const table = document.getElementById("camiones-table")
-  if (!table) return
-  const tbody = table.querySelector("tbody")
+  const table = document.getElementById("camiones-table");
+  if (!table) return;
+  const tbody = table.querySelector("tbody");
   fetch("/api/camiones")
     .then((response) => response.json())
     .then((data) => {
-      tbody.innerHTML = ""
+      tbody.innerHTML = "";
+
+      if (!Array.isArray(data)) {
+        console.error("La respuesta del servidor para la tabla de camiones no es una lista:", data);
+        throw new Error(data.message || "Error al procesar los datos de camiones.");
+      }
+
       data.forEach((camion) => {
-        const row = document.createElement("tr")
+        const row = document.createElement("tr");
         row.innerHTML = `
           <td>${camion.marca}</td>
           <td>${camion.modelo}</td>
@@ -441,15 +447,15 @@ function loadCamionesTable() {
               <button class="action-btn edit" data-id="${camion.id}" title="Editar"><i class="fas fa-edit"></i></button>
               <button class="action-btn delete" data-id="${camion.id}" title="Eliminar"><i class="fas fa-trash"></i></button>
           </td>
-      `
-        tbody.appendChild(row)
-      })
-      setupCamionesActions()
+        `;
+        tbody.appendChild(row);
+      });
+      setupCamionesActions();
     })
     .catch((error) => {
-      console.error("Error al cargar camiones:", error)
-      tbody.innerHTML = `<tr><td colspan="6" class="error-message">Error al cargar datos de camiones</td></tr>`
-    })
+      console.error("Error al cargar camiones:", error);
+      tbody.innerHTML = `<tr><td colspan="6" class="error-message">Error al cargar datos de camiones: ${error.message}</td></tr>`;
+    });
 }
 
 function loadChoferesTable() {
