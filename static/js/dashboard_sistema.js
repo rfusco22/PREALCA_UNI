@@ -825,38 +825,72 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   // MODIFIED: Renamed from deleteUser to disableUser
-  function disableUser(userId, userName) {
+function disableUser(userId, userName) {
     if (userId === 1) {
       displayFlashMessage(
         "No se puede deshabilitar al Usuario Vendedor Interno de Prealca (ID: 1). Este usuario debe permanecer siempre activo.",
         "error",
-      )
-      return
+      );
+      return;
     }
 
     if (confirm(`¿Está seguro de que desea deshabilitar al usuario ${userName}?`)) {
+      console.log(`DEBUG JS: Iniciando solicitud para deshabilitar usuario con ID: ${userId}`); // Nuevo registro
       fetch(`/api/admin/users/disable/${userId}`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
       })
-        .then((response) => response.json())
+        .then((response) => {
+          console.log("DEBUG JS: Respuesta recibida del servidor para deshabilitar usuario."); // Nuevo registro
+          return response.json();
+        })
         .then((data) => {
+          console.log("DEBUG JS: Datos de respuesta del servidor:", data); // Nuevo registro
           if (data.success) {
-            displayFlashMessage(data.message, "success")
-            loadUsers() // Reload users table
+            displayFlashMessage(data.message, "success");
+            loadUsers(); // Reload users table
           } else {
-            displayFlashMessage("Error: " + data.message, "error")
+            displayFlashMessage("Error: " + data.message, "error");
           }
         })
         .catch((error) => {
-          console.error("Error disabling user:", error)
-          displayFlashMessage("Error de red o del servidor al deshabilitar usuario.", "error")
-        })
+          console.error("DEBUG JS: Error al deshabilitar usuario:", error); // Nuevo registro
+          displayFlashMessage("Error de red o del servidor al deshabilitar usuario.", "error");
+        });
     }
   }
 
+  // NEW: Function to enable a user
+  function enableUser(userId, userName) {
+    if (confirm(`¿Está seguro de que desea habilitar al usuario ${userName}?`)) {
+      console.log(`DEBUG JS: Iniciando solicitud para habilitar usuario con ID: ${userId}`); // Nuevo registro
+      fetch(`/api/admin/users/enable/${userId}`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+      })
+        .then((response) => {
+          console.log("DEBUG JS: Respuesta recibida del servidor para habilitar usuario."); // Nuevo registro
+          return response.json();
+        })
+        .then((data) => {
+          console.log("DEBUG JS: Datos de respuesta del servidor:", data); // Nuevo registro
+          if (data.success) {
+            displayFlashMessage(data.message, "success");
+            loadUsers(); // Reload users table
+          } else {
+            displayFlashMessage("Error: " + data.message, "error");
+          }
+        })
+        .catch((error) => {
+          console.error("DEBUG JS: Error al habilitar usuario:", error); // Nuevo registro
+          displayFlashMessage("Error de red o del servidor al habilitar usuario.", "error");
+        });
+    }
+  }
   // NEW: Function to enable a user
   function enableUser(userId, userName) {
     if (confirm(`¿Está seguro de que desea habilitar al usuario ${userName}?`)) {
@@ -1078,3 +1112,4 @@ document.addEventListener("DOMContentLoaded", () => {
     5 * 60 * 1000,
   ) // Every 5 minutes
 })
+
