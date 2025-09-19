@@ -1601,6 +1601,7 @@ def admin_enable_user(id):
     finally:
         connection.close()
         
+        
 # NEW API: Get Vendedor ID for logged-in user
 @app.route('/api/get_vendedor_info_by_user_id', methods=['GET'])
 def get_vendedor_info_by_user_id():
