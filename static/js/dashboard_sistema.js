@@ -699,12 +699,16 @@ document.addEventListener("DOMContentLoaded", () => {
 
           // Provide specific messages for common HTTP status codes
           if (result.status === 409) {
-            errorMessage = result.data.message || "El usuario ya existe en el sistema"
+            errorMessage =
+              result.data.message ||
+              "El usuario ya existe en el sistema. Por favor, verifique el documento o correo electrónico."
+            displayFlashMessage(errorMessage, "error")
           } else if (result.status === 500) {
-            errorMessage = result.data.message || "Error interno del servidor"
+            errorMessage = result.data.message || "Error interno del servidor. Por favor, contacte al administrador."
+            displayFlashMessage("Error: " + errorMessage, "error")
+          } else {
+            displayFlashMessage("Error: " + errorMessage, "error")
           }
-
-          displayFlashMessage("Error: " + errorMessage, "error")
         }
       })
       .catch((error) => {
