@@ -581,6 +581,7 @@ def get_alertas_disenos():
  except Exception as e:
   return jsonify({'error': str(e)}), 500
 
+@app.route('/api/concrete_designs', methods=['GET'])
 def get_concrete_designs():
     connection = get_db_connection()
     try:
