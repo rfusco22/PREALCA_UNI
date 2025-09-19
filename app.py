@@ -4123,6 +4123,7 @@ def deny_material_request(request_id):
        return jsonify({'success': False, 'message': f'Error al denegar solicitud de material: {str(e)}'}), 500
    finally:
        connection.close()
+
 @app.route('/api/costo_diseno', methods=['GET'])
 def get_costo_diseno():
     if session.get('user_role') not in ['administrador']:
@@ -4131,6 +4132,7 @@ def get_costo_diseno():
     connection = get_db_connection()
     try:
         with connection.cursor() as cursor:
+            # ... (el CREATE TABLE se mantiene igual)
             create_table_sql = """
             CREATE TABLE IF NOT EXISTS concrete_design_precios (
                 id INT AUTO_INCREMENT PRIMARY KEY,
@@ -4144,10 +4146,8 @@ def get_costo_diseno():
             """
             cursor.execute(create_table_sql)
             
-            # Obtener datos de inventario real usando la función existente
             inventario_disenos = calcular_inventario_disenos()
             
-            # Obtener precios unitarios de la tabla concrete_design_precios
             sql = """
             SELECT 
                 cd.id,
@@ -4162,14 +4162,17 @@ def get_costo_diseno():
             cursor.execute(sql)
             disenos = cursor.fetchall()
             
-            # Combinar datos de inventario con precios
             for diseno in disenos:
+                # *** INICIO DE LA CORRECCIÓN ***
+                # Convertir el campo 'precio_unitario' de Decimal a float
+                if 'precio_unitario' in diseno and diseno['precio_unitario'] is not None:
+                    diseno['precio_unitario'] = float(diseno['precio_unitario'])
+                # *** FIN DE LA CORRECCIÓN ***
+
                 design_id = diseno['id']
                 if design_id in inventario_disenos:
-                    # Usar M3 disponible real del inventario
                     diseno['m3_disponible'] = inventario_disenos[design_id]['m3_posibles']
                 else:
-                    # Si no hay datos de inventario, usar 0
                     diseno['m3_disponible'] = 0
             
             return jsonify(disenos)
