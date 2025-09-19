@@ -4280,19 +4280,18 @@ def get_precio_unitario_diseno(design_id):
     connection = get_db_connection()
     try:
         with connection.cursor() as cursor:
+            # La creación de la tabla se puede mantener por seguridad
             create_table_sql = """
             CREATE TABLE IF NOT EXISTS concrete_design_precios (
                 id INT AUTO_INCREMENT PRIMARY KEY,
                 design_id INT NOT NULL,
                 precio_unitario DECIMAL(10,2) NOT NULL DEFAULT 0.00,
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
                 FOREIGN KEY (design_id) REFERENCES concrete_designs(id) ON DELETE CASCADE,
                 UNIQUE KEY unique_design_precio (design_id)
             )
             """
             cursor.execute(create_table_sql)
-            
+
             sql = """
             SELECT 
                 cd.id,
@@ -4304,17 +4303,24 @@ def get_precio_unitario_diseno(design_id):
             """
             cursor.execute(sql, (design_id,))
             diseno = cursor.fetchone()
-            
+
             if not diseno:
                 return jsonify({'success': False, 'message': 'Diseño no encontrado'}), 404
-            
-            return jsonify(diseno)
+
+            # Crear un diccionario compatible con JSON
+            diseno_serializable = {
+                'id': diseno['id'],
+                'nombre': diseno['nombre'],
+                'precio_unitario': float(diseno['precio_unitario']) # <-- Conversión clave
+            }
+
+            return jsonify(diseno_serializable)
+
     except Exception as e:
         print(f"Error al obtener precio unitario: {str(e)}")
         return jsonify({'success': False, 'message': f'Error al obtener precio: {str(e)}'}), 500
     finally:
         connection.close()
-
 @app.route('/api/costo_diseno/<int:design_id>', methods=['PUT'])
 def update_precio_unitario_diseno(design_id):
     if session.get('user_role') not in ['administrador']:
