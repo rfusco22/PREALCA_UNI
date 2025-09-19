@@ -1077,156 +1077,136 @@ def admin_add_user():
     if session.get('user_role') not in ['sistema']:
         return jsonify({'success': False, 'message': 'Acceso denegado'}), 403
 
+    # Extraer datos del formulario
     nombre = request.form.get('nombre')
     apellido = request.form.get('apellido')
     documento_type = request.form.get('documento_type')
     documento_number = request.form.get('documento_number')
-    cedula = f"{documento_type}-{documento_number}"
     correo = request.form.get('correo')
     contrasena = request.form.get('contrasena')
     rol = request.form.get('rol')
     direccion = request.form.get('direccion')
-    
     telefono_prefix = request.form.get('telefono_prefix')
     telefono_number = request.form.get('telefono_number')
-    telefono = request.form.get('telefono')  # Keep for backward compatibility
+
+    # Combinar campos de documento y teléfono
+    cedula = f"{documento_type}-{documento_number}" if documento_type and documento_number else None
+    telefono = f"{telefono_prefix}{telefono_number}" if telefono_prefix and telefono_number else None
+
+    # Validar campos obligatorios
+    required_fields = {
+        'nombre': nombre, 'apellido': apellido, 'documento_type': documento_type,
+        'documento_number': documento_number, 'correo': correo, 'contrasena': contrasena,
+        'rol': rol, 'direccion': direccion, 'telefono': telefono
+    }
+    for field, value in required_fields.items():
+        if not value:
+            return jsonify({'success': False, 'message': f'El campo {field} es obligatorio'}), 400
+
+    # Validaciones de formato
+    if not validate_name(nombre)[0]: return jsonify({'success': False, 'message': validate_name(nombre)[1]}), 400
+    if not validate_name(apellido)[0]: return jsonify({'success': False, 'message': validate_name(apellido)[1]}), 400
+    if not validate_venezuelan_cedula(cedula)[0]: return jsonify({'success': False, 'message': validate_venezuelan_cedula(cedula)[1]}), 400
+    if not validate_email(correo)[0]: return jsonify({'success': False, 'message': validate_email(correo)[1]}), 400
+    if not validate_address(direccion)[0]: return jsonify({'success': False, 'message': validate_address(direccion)[1]}), 400
+    if not validate_phone(telefono)[0]: return jsonify({'success': False, 'message': validate_phone(telefono)[1]}), 400
     
-    # If separate fields are provided, combine them
-    if telefono_prefix and telefono_number:
-        telefono = f"{telefono_prefix}{telefono_number}"
-    elif not telefono:
-        # If no combined telefono and no separate fields, it's missing
-        telefono = None
-
-    # Basic validation - check each field individually
-    if not nombre:
-        return jsonify({'success': False, 'message': 'El nombre es obligatorio'}), 400
-    if not apellido:
-        return jsonify({'success': False, 'message': 'El apellido es obligatorio'}), 400
-    if not documento_type:
-        return jsonify({'success': False, 'message': 'El tipo de documento es obligatorio'}), 400
-    if not documento_number:
-        return jsonify({'success': False, 'message': 'El número de documento es obligatorio'}), 400
-    if not correo:
-        return jsonify({'success': False, 'message': 'El correo es obligatorio'}), 400
-    if not contrasena:
-        return jsonify({'success': False, 'message': 'La contraseña es obligatoria'}), 400
-    if not rol:
-        return jsonify({'success': False, 'message': 'El rol es obligatorio'}), 400
-    if not direccion:
-        return jsonify({'success': False, 'message': 'La dirección es obligatoria'}), 400
-    if not telefono:
-        return jsonify({'success': False, 'message': 'El teléfono es obligatorio'}), 400
-
-    # Validate fields
-    is_valid_name, name_message = validate_name(nombre)
-    if not is_valid_name:
-        return jsonify({'success': False, 'message': name_message}), 400
-
-    is_valid_apellido, apellido_message = validate_name(apellido)
-    if not is_valid_apellido:
-        return jsonify({'success': False, 'message': apellido_message}), 400
-
-    is_valid_cedula, cedula_message = validate_venezuelan_cedula(cedula)
-    if not is_valid_cedula:
-        return jsonify({'success': False, 'message': cedula_message}), 400
-
-    is_valid_email, email_message = validate_email(correo)
-    if not is_valid_email:
-        return jsonify({'success': False, 'message': email_message}), 400
-
-    is_valid_address, address_message = validate_address(direccion)
-    if not is_valid_address:
-        return jsonify({'success': False, 'message': address_message}), 400
-
-    is_valid_phone, phone_message = validate_phone(telefono)
-    if not is_valid_phone:
-        return jsonify({'success': False, 'message': phone_message}), 400
-
+    # Procesar foto de perfil
+    foto_path = None
     if 'foto' in request.files and request.files['foto'].filename != '':
         foto = request.files['foto']
-        if foto and allowed_file(foto.filename):
-            if not validate_file_size(foto):
-                return jsonify({'success': False, 'message': f"El archivo de foto es demasiado grande. Tamaño máximo: {MAX_FILE_SIZE // (1024*1024)}MB"}), 400
-            try:
-                filename = secure_filename(f"{cedula}_{datetime.now().strftime('%Y%m%d%H%M%S')}.{foto.filename.rsplit('.', 1)[1].lower()}")
-                foto.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
-                foto_path = f"/static/uploads/{filename}"
-            except Exception as e:
-                print(f"Error saving photo for admin add user: {str(e)}")
-                return jsonify({'success': False, 'message': f'Error al guardar la foto: {str(e)}'}), 500
-        else:
-            return jsonify({'success': False, 'message': 'Tipo de archivo de foto no permitido.'}), 400
+        is_valid_attachment, attachment_message = validate_attachment(foto)
+        if not is_valid_attachment:
+            return jsonify({'success': False, 'message': attachment_message}), 400
+        try:
+            filename = secure_filename(f"{cedula}_{datetime.now().strftime('%Y%m%d%H%M%S')}.{foto.filename.rsplit('.', 1)[1].lower()}")
+            foto.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
+            foto_path = f"/static/uploads/{filename}"
+        except Exception as e:
+            return jsonify({'success': False, 'message': f'Error al guardar la foto: {str(e)}'}), 500
 
     connection = get_db_connection()
     try:
         with connection.cursor() as cursor:
-            sql_check = "SELECT id FROM usuarios WHERE correo = %s"
-            cursor.execute(sql_check, (correo,))
+            # --- Verificaciones de duplicados ---
+            sql_check_email = "SELECT id FROM usuarios WHERE correo = %s"
+            cursor.execute(sql_check_email, (correo,))
             if cursor.fetchone():
                 return jsonify({'success': False, 'message': 'El correo ya está registrado'}), 409
-            
-            sql_check_cedula_usuarios = "SELECT id FROM usuarios WHERE cedula = %s"
-            cursor.execute(sql_check_cedula_usuarios, (cedula,))
-            if cursor.fetchone():
-                return jsonify({'success': False, 'message': 'La cédula ya está registrada para otro usuario en el sistema.'}), 409
 
+            sql_check_cedula = "SELECT id FROM usuarios WHERE cedula = %s"
+            cursor.execute(sql_check_cedula, (cedula,))
+            if cursor.fetchone():
+                return jsonify({'success': False, 'message': 'La cédula ya está registrada para otro usuario'}), 409
+
+            # --- Inserción en la base de datos ---
             reset_token = ''.join(random.choices(string.ascii_letters + string.digits, k=32))
             reset_token_expiry = datetime.now() + timedelta(hours=24)
+            
+            sql_insert_user = """
+                INSERT INTO usuarios (nombre, apellido, cedula, correo, contrasena, rol, foto, verificado, reset_token, reset_token_expiry, direccion, telefono, status) 
+                VALUES (%s, %s, %s, %s, %s, %s, %s, 1, %s, %s, %s, %s, 'active')
+            """
+            cursor.execute(sql_insert_user, (
+                nombre, apellido, cedula, correo, contrasena, rol, foto_path, 
+                reset_token, reset_token_expiry, direccion, telefono
+            ))
+            
+            if rol == 'vendedor':
+                sql_check_vendedor = "SELECT id FROM vendedores WHERE cedula = %s"
+                cursor.execute(sql_check_vendedor, (cedula,))
+                if cursor.fetchone():
+                    # Este caso es improbable si la verificación de cédula en usuarios ya pasó, pero es una buena práctica de seguridad
+                    connection.rollback()
+                    return jsonify({'success': False, 'message': 'La cédula ya está registrada para otro vendedor.'}), 409
+                
+                sql_insert_vendedor = """
+                    INSERT INTO vendedores (nombre, cedula, telefono, direccion, correo)
+                    VALUES (%s, %s, %s, %s, %s)
+                """
+                cursor.execute(sql_insert_vendedor, (f"{nombre} {apellido}", cedula, telefono, direccion, correo))
 
-            # MODIFIED: Added status = 'active' to new user insertion
-            sql = """INSERT INTO usuarios (nombre, apellido, cedula, correo, contrasena, rol, foto, verificado, last_active, reset_token, reset_token_expiry, direccion, telefono, status) 
-                     VALUES (%s, %s, %s, %s, %s, %s, %s, 1, NULL, %s, %s, %s, %s, 'active')"""
-            cursor.execute(sql, (nombre, apellido, cedula, correo, contrasena, rol, foto_path, reset_token, reset_token_expiry, direccion, telefono))
             connection.commit()
 
-            if rol == 'vendedor':
-                sql_check_cedula_vendedores = "SELECT id FROM vendedores WHERE cedula = %s"
-                cursor.execute(sql_check_cedula_vendedores, (cedula,))
-                if cursor.fetchone():
-                    return jsonify({'success': False, 'message': 'La cédula ya está registrada para otro vendedor.'}), 409
-
-                sql_add_vendedor = """INSERT INTO vendedores (nombre, cedula, telefono, direccion, correo)
-                                     VALUES (%s, %s, %s, %s, %s)"""
-                cursor.execute(sql_add_vendedor, (nombre, cedula, telefono, direccion, correo))
-                connection.commit()
-
+            # --- Envío de correo electrónico ---
             try:
                 user_full_name = f"{nombre} {apellido}"
                 role_description = ROLE_DESCRIPTIONS.get(rol, 'sin descripción específica.')
-                
                 login_url = request.host_url.rstrip('/')
                 reset_password_url = f"{request.host_url}reset_password?token={reset_token}"
 
                 html_body = render_template(
                     'welcome_email.html',
-                    user_name=user_full_name,
-                    user_email=correo,
-                    user_password=contrasena,
-                    user_role_name=rol.capitalize(),
-                    role_description=role_description,
-                    login_url=login_url,
-                    reset_password_url=reset_password_url,
+                    user_name=user_full_name, user_email=correo, user_password=contrasena,
+                    user_role_name=rol.capitalize(), role_description=role_description,
+                    login_url=login_url, reset_password_url=reset_password_url,
                     current_year=datetime.now().year
                 )
-
-                msg = Message(
-                    subject="¡Bienvenido a Prealca! Tu cuenta ha sido creada",
-                    sender=app.config['MAIL_USERNAME'],
-                    recipients=[correo]
-                )
+                msg = Message("¡Bienvenido a Prealca! Tu cuenta ha sido creada", sender=app.config['MAIL_USERNAME'], recipients=[correo])
                 msg.html = html_body
                 mail.send(msg)
+                
             except Exception as mail_e:
+                # El usuario se creó, pero el correo falló. Se considera un éxito parcial.
                 return jsonify({'success': True, 'message': 'Usuario agregado exitosamente, pero falló el envío del correo de bienvenida.'})
 
         return jsonify({'success': True, 'message': 'Usuario agregado exitosamente'})
+        
+    except pymysql.err.IntegrityError as e:
+        connection.rollback()
+        # Captura errores de duplicados directamente de la base de datos (más seguro)
+        if 'correo' in str(e):
+            return jsonify({'success': False, 'message': 'El correo ya está registrado (error de integridad).'}), 409
+        if 'cedula' in str(e):
+            return jsonify({'success': False, 'message': 'La cédula ya está registrada (error de integridad).'}), 409
+        return jsonify({'success': False, 'message': f'Error de base de datos: {str(e)}'}), 500
+        
     except Exception as e:
         connection.rollback()
-        return jsonify({'success': False, 'message': f'Error al agregar usuario: {str(e)}'}), 500
+        return jsonify({'success': False, 'message': f'Error inesperado al agregar usuario: {str(e)}'}), 500
+        
     finally:
         connection.close()
-
 # API para listar usuarios (para el administrador)
 @app.route('/api/admin/users/list', methods=['GET'])
 def admin_list_users():
