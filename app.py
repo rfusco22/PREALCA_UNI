@@ -2979,7 +2979,7 @@ def get_mantenimiento_by_id(id):
 
 @app.route('/api/mantenimiento/<int:id>', methods=['POST'])
 def update_mantenimiento(id):
- if session.get('user_role') not in ['administrador']: # Removed 'gerencia'
+ if session.get('user_role') not in ['registro']: # Removed 'gerencia'
   return jsonify({'success': False, 'message': 'Acceso denegado'}), 403
 
  camion_id = request.form.get('camion_id')
