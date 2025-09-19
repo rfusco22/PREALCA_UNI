@@ -527,34 +527,44 @@ function loadVendedoresTable() {
 }
 
 function loadMantenimientoTable() {
-  const table = document.getElementById("mantenimiento-table")
-  if (!table) return
-  const tbody = table.querySelector("tbody")
+  const table = document.getElementById("mantenimiento-table");
+  if (!table) return;
+  const tbody = table.querySelector("tbody");
   fetch("/api/mantenimiento")
     .then((response) => response.json())
     .then((data) => {
-      tbody.innerHTML = ""
+      tbody.innerHTML = "";
+
+      // Verificación clave para evitar el TypeError
+      if (!Array.isArray(data)) {
+        console.error("La respuesta del servidor para mantenimientos no es una lista:", data);
+        throw new Error(data.message || "Error al procesar los datos de mantenimientos.");
+      }
+
       data.forEach((mantenimiento) => {
-        const row = document.createElement("tr")
+        const row = document.createElement("tr");
         row.innerHTML = `
               <td>${mantenimiento.placa} - ${mantenimiento.modelo}</td>
-              <td>${formatDate(mantenimiento.fecha)}</td>
+              <td>${mantenimiento.fecha}</td>
               <td>${mantenimiento.tipo_mantenimiento || "N/A"}</td>
               <td>${mantenimiento.kilometraje_actual || "N/A"} km</td>
               <td>${mantenimiento.proximo_kilometraje_mantenimiento ? `${mantenimiento.proximo_kilometraje_mantenimiento} km` : "N/A"}</td>
-              <td>${mantenimiento.proxima_fecha_mantenimiento ? formatDate(mantenimiento.proxima_fecha_mantenimiento) : "N/A"}</td>
+              <td>${mantenimiento.proxima_fecha_mantenimiento || "N/A"}</td>
               <td>${mantenimiento.descripcion}</td>
               <td>${formatCurrency(mantenimiento.costo)}</td>
               <td>
                   <button class="action-btn edit" data-id="${mantenimiento.id}" title="Editar"><i class="fas fa-edit"></i></button>
                   <button class="action-btn delete" data-id="${mantenimiento.id}" title="Eliminar"><i class="fas fa-trash"></i></button>
               </td>
-          `
-        tbody.appendChild(row)
-      })
-      setupMantenimientoActions()
+          `;
+        tbody.appendChild(row);
+      });
+      setupMantenimientoActions();
     })
-    .catch((error) => console.error("Error al cargar mantenimientos:", error))
+    .catch((error) => {
+        console.error("Error al cargar mantenimientos:", error);
+        tbody.innerHTML = `<tr><td colspan="9" class="error-message">Error al cargar mantenimientos: ${error.message}</td></tr>`;
+    });
 }
 
 function loadProveedoresTable() {
