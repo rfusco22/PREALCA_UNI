@@ -2839,29 +2839,38 @@ def delete_inventario(id):
  finally:
   connection.close()
 
-# API para mantenimiento
 @app.route('/api/mantenimiento', methods=['GET'])
 def get_mantenimiento():
  connection = get_db_connection()
  try:
   with connection.cursor() as cursor:
    sql = """
-    SELECT m.*, c.placa, c.modelo, CAST(m.costo AS DECIMAL(10, 2)) as costo
+    SELECT m.*, c.placa, c.modelo, m.costo
     FROM mantenimiento m
     JOIN camiones c ON m.camion_id = c.id
     ORDER BY m.fecha DESC
    """
    cursor.execute(sql)
-   mantenimientos = cursor.fetchall()
-  
-  # MODIFIED: Format dates for the maintenance list
-  for maint in mantenimientos:
-    if isinstance(maint['fecha'], (datetime, date)):
-        maint['fecha'] = maint['fecha'].strftime('%d/%m/%Y')
-    if maint['proxima_fecha_mantenimiento'] and isinstance(maint['proxima_fecha_mantenimiento'], (datetime, date)):
-        maint['proxima_fecha_mantenimiento'] = maint['proxima_fecha_mantenimiento'].strftime('%d/%m/%Y')
+   mantenimientos_db = cursor.fetchall()
 
-  return jsonify(mantenimientos)
+  # Construir la lista manualmente para ser compatible con JSON
+  mantenimientos_serializable = []
+  for maint in mantenimientos_db:
+      mantenimientos_serializable.append({
+          'id': maint['id'],
+          'camion_id': maint['camion_id'],
+          'placa': maint['placa'],
+          'modelo': maint['modelo'],
+          'fecha': maint['fecha'].strftime('%d/%m/%Y') if isinstance(maint['fecha'], (datetime, date)) else maint['fecha'],
+          'tipo_mantenimiento': maint['tipo_mantenimiento'],
+          'kilometraje_actual': maint['kilometraje_actual'],
+          'proximo_kilometraje_mantenimiento': maint['proximo_kilometraje_mantenimiento'],
+          'proxima_fecha_mantenimiento': maint['proxima_fecha_mantenimiento'].strftime('%d/%m/%Y') if maint['proxima_fecha_mantenimiento'] and isinstance(maint['proxima_fecha_mantenimiento'], (datetime, date)) else None,
+          'descripcion': maint['descripcion'],
+          'costo': float(maint['costo']) if maint['costo'] is not None else 0.0 # <-- Conversión clave
+      })
+
+  return jsonify(mantenimientos_serializable)
  except Exception as e:
   print(f"Error al obtener mantenimientos: {str(e)}")
   return jsonify({'error': str(e)}), 500
