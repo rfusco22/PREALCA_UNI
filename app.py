@@ -2435,7 +2435,6 @@ def delete_vendedor_by_id(id):
  finally:
   connection.close()
 
-# API para despachos - MODIFICADA PARA USAR DISEÑOS
 @app.route('/api/despachos', methods=['GET'])
 def get_despachos():
     connection = get_db_connection()
@@ -2445,7 +2444,6 @@ def get_despachos():
             user_id = session.get('user_id')
             vendedor_id_filter = None
 
-            # If the user is a 'vendedor', filter by their vendedor_id
             if user_role == 'vendedor' and user_id:
                 sql_get_user_cedula = "SELECT cedula FROM usuarios WHERE id = %s"
                 cursor.execute(sql_get_user_cedula, (user_id,))
@@ -2457,7 +2455,7 @@ def get_despachos():
                     vendedor_id_data = cursor.fetchone()
                     if vendedor_id_data:
                         vendedor_id_filter = vendedor_id_data['id']
-            
+
             sql = """
                 SELECT d.*, c.nombre as cliente_nombre, ch.nombre as chofer_nombre,
                        v.nombre as vendedor_nombre, cmn.placa as camion_placa, cmn.modelo as camion_modelo,
@@ -2475,36 +2473,51 @@ def get_despachos():
             if vendedor_id_filter:
                 sql += " WHERE d.vendedor_id = %s"
                 query_params.append(vendedor_id_filter)
-            
-            sql += " ORDER BY d.fecha DESC, d.guia DESC"
-            
-            cursor.execute(sql, tuple(query_params))
-            despachos = cursor.fetchall()
 
-        for despacho in despachos:
-            if isinstance(despacho['fecha'], (datetime, date)):
-                despacho['fecha'] = despacho['fecha'].strftime('%d/%m/%Y') # Changed format
-            
+            sql += " ORDER BY d.fecha DESC, d.guia DESC"
+
+            cursor.execute(sql, tuple(query_params))
+            despachos_db = cursor.fetchall()
+
+        # Construir manualmente la lista para ser compatible con JSON
+        despachos_serializable = []
+        for despacho in despachos_db:
+            # Formatear hora_salida
+            hora_salida_str = "N/A"
             if isinstance(despacho.get('hora_salida'), timedelta):
                 total_seconds = int(despacho['hora_salida'].total_seconds())
                 hours, remainder = divmod(total_seconds, 3600)
-                minutes, seconds = divmod(remainder, 60)
-                despacho['hora_salida'] = f"{hours:02}:{minutes:02}:{seconds:02}"
-            elif despacho.get('hora_salida') is None:
-                despacho['hora_salida'] = "N/A"
+                minutes, _ = divmod(remainder, 60)
+                hora_salida_str = f"{hours:02}:{minutes:02}"
 
+            # Formatear hora_llegada
+            hora_llegada_str = "N/A"
             if isinstance(despacho.get('hora_llegada'), timedelta):
                 total_seconds = int(despacho['hora_llegada'].total_seconds())
-                hours, remainder = divmod(remainder, 3600)
-                minutes, seconds = divmod(remainder, 60)
-                despacho['hora_llegada'] = f"{hours:02}:{minutes:02}:{seconds:02}"
-            elif despacho.get('hora_llegada') is None:
-                despacho['hora_llegada'] = "N/A"
+                hours, remainder = divmod(total_seconds, 3600)
+                minutes, _ = divmod(remainder, 60)
+                hora_llegada_str = f"{hours:02}:{minutes:02}"
 
-            despacho['cliente_contacto'] = despacho.get('cliente_nombre')
-            despacho['cliente_phone'] = despacho.get('cliente_telefono')
+            despachos_serializable.append({
+                'id': despacho['id'],
+                'fecha': despacho['fecha'].strftime('%d/%m/%Y') if isinstance(despacho['fecha'], (datetime, date)) else despacho['fecha'],
+                'guia': despacho['guia'],
+                'm3': float(despacho['m3']) if despacho['m3'] is not None else 0.0, # <-- Conversión clave
+                'cliente_nombre': despacho['cliente_nombre'],
+                'chofer_nombre': despacho['chofer_nombre'],
+                'vendedor_nombre': despacho['vendedor_nombre'],
+                'camion_placa': despacho['camion_placa'],
+                'camion_modelo': despacho['camion_modelo'],
+                'concrete_design_name': despacho['concrete_design_name'],
+                'diseno_resistencia': despacho['diseno_resistencia'],
+                'diseno_asentamiento': despacho['diseno_asentamiento'],
+                'status': despacho['status'],
+                'hora_salida': hora_salida_str,
+                'hora_llegada': hora_llegada_str,
+                'received_by': despacho['received_by']
+            })
 
-        return jsonify(despachos)
+        return jsonify(despachos_serializable)
     except Exception as e:
         print(f"Error al obtener despachos: {str(e)}")
         return jsonify({'error': str(e)}), 500
