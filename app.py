@@ -3530,6 +3530,8 @@ def add_quotation():
     finally:
         connection.close()
 
+# app.py
+
 @app.route('/api/quotations/list', methods=['GET'])
 def list_quotations():
     if session.get('user_role') not in ['administrador', 'gerencia', 'vendedor']:
@@ -3565,12 +3567,28 @@ def list_quotations():
                     c.quotation_date DESC, c.quotation_number DESC
             """
             cursor.execute(sql)
-            quotations = cursor.fetchall()
+            quotations_db = cursor.fetchall()
 
-            # Format the quotation_date
-            for quotation in quotations:
-                if isinstance(quotation['quotation_date'], (datetime, date)):
-                    quotation['quotation_date'] = quotation['quotation_date'].strftime('%d/%m/%Y')
+            # Create a serializable list and convert Decimal types
+            quotations = []
+            for quotation in quotations_db:
+                serializable_quotation = {
+                    'id': quotation['id'],
+                    'quotation_number': quotation['quotation_number'],
+                    # Convert to string and handle formatting
+                    'quotation_date': quotation['quotation_date'].strftime('%d/%m/%Y') if isinstance(quotation['quotation_date'], (datetime, date)) else quotation['quotation_date'],
+                    'client_name': quotation['client_name'],
+                    'seller_name': quotation['seller_name'],
+                    # Fix: Convert Decimal to float
+                    'total_amount': float(quotation['total_amount']) if quotation['total_amount'] is not None else 0.0,
+                    'validity_days': quotation['validity_days'],
+                    'notes': quotation['notes'],
+                    'status': quotation['status'],
+                    # Fix: Convert Decimal to float
+                    'total_quantity': float(quotation['total_quantity']) if quotation['total_quantity'] is not None else 0.0,
+                    'item_summary_description': quotation['item_summary_description']
+                }
+                quotations.append(serializable_quotation)
 
             return jsonify(quotations)
     except Exception as e:
