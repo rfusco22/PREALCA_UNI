@@ -109,11 +109,9 @@
     </style>
 </head>
 <body>
-    <div class="email-container">
-        <div class="email-header">
-            <!-- Usando URL directa del blob en lugar de base64 -->
+    <div class="email-header">
             <div class="logo-container">
-                <img src="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/Logo%20Prealca%20Sin%20Fondo-MBKN5IeaLDX22tPpJp7dcflZmucvxf.png" alt="Logo Prealca" class="logo-image" style="max-width: 200px; height: auto; display: block; margin: 0 auto; background: white;">
+                <img src="{{ url_for('static', filename='uploads/Logo Prealca Sin Fondo.png', _external=True) }}" alt="Logo Prealca" class="logo-image" style="max-width: 200px; height: auto; display: block; margin: 0 auto; background: white;">
             </div>
             <h1>¡Bienvenido a Prealca!</h1>
         </div>
@@ -145,3 +143,4 @@
     </div>
 </body>
 </html>
+
