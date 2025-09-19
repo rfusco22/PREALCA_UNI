@@ -40,16 +40,19 @@ document.addEventListener("DOMContentLoaded", () => {
   const addUserFotoInput = document.getElementById("user_foto")
 
   // Input fields for Edit User Modal
-  const editUserNameInput = document.getElementById("nombre_user_edit")
-  const editUserApellidoInput = document.getElementById("apellido_user_edit")
-  const editUserDocPrefixInput = document.getElementById("documento_user_edit_prefix")
-  const editUserDocNumberInput = document.getElementById("documento_user_edit_number")
-  const editUserCorreoInput = document.getElementById("correo_user_edit")
-  const editUserDireccionInput = document.getElementById("direccion_user_edit") // NEW
-  const editUserTelefonoPrefixInput = document.getElementById("telefono_user_edit_prefix")
-  const editUserTelefonoNumberInput = document.getElementById("telefono_user_edit_number")
-  const editUserFotoInput = document.getElementById("foto_user_edit")
-  const editUserStatusInput = document.getElementById("status_user_edit") // NEW
+  // Input fields for Edit User Modal
+  const editUserNameInput = document.getElementById("nombre_user_edit");
+  const editUserApellidoInput = document.getElementById("apellido_user_edit");
+  // --- INICIO DE LAS CORRECCIONES ---
+  const editUserDocPrefixInput = document.getElementById("documento_type_user_edit"); // CORREGIDO
+  const editUserDocNumberInput = document.getElementById("documento_number_user_edit"); // CORREGIDO
+  const editUserCorreoInput = document.getElementById("correo_user_edit");
+  const editUserDireccionInput = document.getElementById("direccion_user_edit");
+  const editUserTelefonoPrefixInput = document.getElementById("telefono_prefix_user_edit"); // CORREGIDO
+  const editUserTelefonoNumberInput = document.getElementById("telefono_number_user_edit"); // CORREGIDO
+  // --- FIN DE LAS CORRECCIONES ---
+  const editUserFotoInput = document.getElementById("foto_user_edit");
+  const editUserStatusInput = document.getElementById("status_user_edit");
 
   // Function to show a specific section and hide others
   function showSection(sectionId) {
@@ -1078,3 +1081,4 @@ document.addEventListener("DOMContentLoaded", () => {
     5 * 60 * 1000,
   ) // Every 5 minutes
 })
+
