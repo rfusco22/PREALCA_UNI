@@ -705,7 +705,7 @@ function loadMaterialRequestsTable() {
         <td>${request.quantity_requested}</td>
         <td>${request.unit}</td>
         <td>${request.reason || "N/A"}</td>
-        <td><span class="status-badge ${statusClass}">${request.status.charAt(0).toUpperCase() + request.status.slice(1)}</span></td>
+        <td><span class="status-badge ${statusClass}">${traducirEstado(request.status)}</span></td>
         <td>${request.responder_full_name || "N/A"}</td>
       `
         tbody.appendChild(row)
