@@ -2276,84 +2276,62 @@ def get_vendedores():
 
 @app.route('/api/vendedores', methods=['POST'])
 def add_vendedor():
- if session.get('user_role') not in ['administrador']: # Removed 'gerencia'
-  return jsonify({'success': False, 'message': 'Acceso denegado'}), 403
+    if session.get('user_role') not in ['administrador']:
+        return jsonify({'success': False, 'message': 'Acceso denegado'}), 403
 
- nombre = request.form.get('nombre')
- documento_type = request.form.get('documento_type')
- documento_number = request.form.get('telefono')
- direccion = request.form.get('direccion')
- correo = request.form.get('correo')
+    nombre = request.form.get('nombre')
+    documento_type = request.form.get('documento_type')
+    # --- INICIO DE LA CORRECCIÓN ---
+    # Se cambió request.form.get('telefono') por request.form.get('documento_number')
+    documento_number = request.form.get('documento_number')
+    telefono = request.form.get('telefono') # Se agregó una línea para obtener el teléfono correctamente
+    # --- FIN DE LA CORRECCIÓN ---
+    direccion = request.form.get('direccion')
+    correo = request.form.get('correo')
 
- cedula = f"{documento_type}-{documento_number}"
+    cedula = f"{documento_type}-{documento_number}"
 
- # Validate fields
- is_valid_name, name_message = validate_name(nombre)
- if not is_valid_name:
-  return jsonify({'success': False, 'message': name_message}), 400
+    # Validate fields
+    is_valid_name, name_message = validate_name(nombre)
+    if not is_valid_name:
+        return jsonify({'success': False, 'message': name_message}), 400
 
- is_valid_doc, doc_message = validate_venezuelan_cedula(cedula)
- if not is_valid_doc:
-  return jsonify({'success': False, 'message': doc_message}), 400
+    is_valid_doc, doc_message = validate_venezuelan_cedula(cedula)
+    if not is_valid_doc:
+        return jsonify({'success': False, 'message': doc_message}), 400
 
- is_valid_phone, phone_message = validate_phone(telefono)
- if not is_valid_phone:
-  return jsonify({'success': False, 'message': phone_message}), 400
+    is_valid_phone, phone_message = validate_phone(telefono)
+    if not is_valid_phone:
+        return jsonify({'success': False, 'message': phone_message}), 400
 
- is_valid_address, address_message = validate_address(direccion)
- if not is_valid_address:
-  return jsonify({'success': False, 'message': address_message}), 400
+    is_valid_address, address_message = validate_address(direccion)
+    if not is_valid_address:
+        return jsonify({'success': False, 'message': address_message}), 400
 
- is_valid_email, email_message = validate_email(correo)
- if not is_valid_email:
-  return jsonify({'success': False, 'message': email_message}), 400
+    is_valid_email, email_message = validate_email(correo)
+    if not is_valid_email:
+        return jsonify({'success': False, 'message': email_message}), 400
 
- connection = get_db_connection()
- try:
-  with connection.cursor() as cursor:
-   sql_check_cedula = "SELECT id FROM vendedores WHERE cedula = %s"
-   cursor.execute(sql_check_cedula, (cedula,))
-   if cursor.fetchone():
-    return jsonify({'success': False, 'message': f'Error: La cédula {cedula} ya le pertenece a otro vendedor'}), 409
+    connection = get_db_connection()
+    try:
+        with connection.cursor() as cursor:
+            sql_check_cedula = "SELECT id FROM vendedores WHERE cedula = %s"
+            cursor.execute(sql_check_cedula, (cedula,))
+            if cursor.fetchone():
+                return jsonify({'success': False, 'message': f'Error: La cédula {cedula} ya le pertenece a otro vendedor'}), 409
 
-   sql = """INSERT INTO vendedores (nombre, cedula, telefono, direccion, correo)
-       VALUES (%s, %s, %s, %s, %s)"""
-   cursor.execute(sql, (nombre, cedula, telefono, direccion, correo))
-   connection.commit()
-  return jsonify({'success': True, 'message': 'Vendedor registrado exitosamente'})
- except Exception as e:
-  connection.rollback()
-  print(f"Error al registrar vendedor: {str(e)}")
-  return jsonify({'success': False, 'message': f'Error al registrar vendedor: {str(e)}'}), 500
- finally:
-  connection.close()
-
-@app.route('/api/vendedores/<int:id>', methods=['GET'])
-def get_vendedor_by_id(id):
- connection = get_db_connection()
- try:
-  with connection.cursor() as cursor:
-   sql = "SELECT id, nombre, cedula, telefono, direccion, correo FROM vendedores WHERE id = %s"
-   cursor.execute(sql, (id,))
-   vendedor = cursor.fetchone()
-   
-  if vendedor:
-   vendedor_serializable = {
-    'id': vendedor['id'],
-    'nombre': vendedor['nombre'],
-    'cedula': vendedor['cedula'],
-    'telefono': vendedor['telefono'],
-    'direccion': vendedor['direccion'],
-    'correo': vendedor['correo']
-   }
-   return jsonify(vendedor_serializable)
-  else:
-   return jsonify({"error": "Vendedor no encontrado"}), 404
- except Exception as e:
-  print(f"Error al obtener vendedor: {str(e)}")
-  return jsonify({"error": str(e)}), 500
- finally:
-  connection.close()
+            sql = """INSERT INTO vendedores (nombre, cedula, telefono, direccion, correo)
+                    VALUES (%s, %s, %s, %s, %s)"""
+            cursor.execute(sql, (nombre, cedula, telefono, direccion, correo))
+            connection.commit()
+        return jsonify({'success': True, 'message': 'Vendedor registrado exitosamente'})
+    except Exception as e:
+        connection.rollback()
+        print(f"Error al registrar vendedor: {str(e)}")
+        return jsonify({'success': False, 'message': f'Error al registrar vendedor: {str(e)}'}), 500
+    finally:
+        if connection:
+            connection.close()
 
 @app.route('/api/vendedores/<int:id>', methods=['POST'])
 def update_vendedor_by_id(id):
