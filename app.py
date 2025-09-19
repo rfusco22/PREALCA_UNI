@@ -4068,7 +4068,7 @@ def list_material_requests():
 
                 requests_serializable.append({
                     'id': req['id'],
-                    'request_date': req['request_date'].strftime('%d/%m/%Y %H:%M:%S') if isinstance(req['request_date'], datetime) else req['request_date'],
+                    'request_date': req['request_date'].strftime('%d/%m/%Y') if isinstance(req['request_date'], datetime) else req['request_date'],
                     'material_name': req['material_name'],
                     'quantity_requested': float(req['quantity_requested']) if req['quantity_requested'] is not None else 0.0,
                     'unit': req['unit'],
