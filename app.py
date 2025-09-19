@@ -13,27 +13,22 @@ import threading # Import threading for asynchronous email sending
 
 app = Flask(__name__, static_folder='static', template_folder='templates')
 
-# Clave secreta (leída desde variables de entorno para mayor seguridad)
-app.secret_key = os.environ.get('SECRET_KEY', 'prealca_secret_key_2023_default')
+app.secret_key = "prealca_secret_key_2023"
 
-# --- CONFIGURACIÓN MEJORADA PARA RAILWAY ---
+# Configuración de la base de datos MySQL
+db_host = "yamanote.proxy.rlwy.net"
+db_user = "root"
+db_password = "IntAxhBpIcxKbxDnXGEOGDuwoljAnvxF"
+db_name = "railway"
+db_port = 14899
 
-# Configuración de la base de datos MySQL (leída desde variables de entorno de Railway)
-db_host = os.environ.get("MYSQLHOST")
-db_user = os.environ.get("MYSQLUSER")
-db_password = os.environ.get("MYSQLPASSWORD")
-db_name = os.environ.get("MYSQLDATABASE")
-db_port = int(os.environ.get("MYSQLPORT", 3306))
-
-# Configuración del correo (leída desde variables de entorno)
-app.config['MAIL_SERVER'] = os.environ.get('MAIL_SERVER', 'smtp.gmail.com')
-app.config['MAIL_PORT'] = int(os.environ.get('MAIL_PORT', 587))
-app.config['MAIL_USE_TLS'] = os.environ.get('MAIL_USE_TLS', 'True').lower() in ['true', '1', 't']
-app.config['MAIL_USERNAME'] = os.environ.get('MAIL_USERNAME')
-app.config['MAIL_PASSWORD'] = os.environ.get('MAIL_PASSWORD')
+# Configuración del correo
+app.config['MAIL_SERVER'] = 'smtp.gmail.com'
+app.config['MAIL_PORT'] = 587
+app.config['MAIL_USE_TLS'] = True
+app.config['MAIL_USERNAME'] = 'fuscoriccardo11@gmail.com'
+app.config['MAIL_PASSWORD'] = 'fsqa yqdg dxgh smlo'
 mail = Mail(app)
-
-# --- FIN DE LA CONFIGURACIÓN MEJORADA ---
 
 # Helper function to send email asynchronously
 def send_async_email(app, msg):
@@ -602,7 +597,7 @@ def get_concrete_designs():
 
 @app.route('/api/concrete_designs', methods=['POST'])
 def add_concrete_design():
- if session.get('user_role') not in ['control_calidad', 'vendedor', 'administrador', 'gerencia']: # Removed 'gerencia'
+ if session.get('user_role') not in ['control_calidad']: # Removed 'gerencia'
   return jsonify({'success': False, 'message': 'Acceso denegado'}), 403
 
  data = request.json
@@ -674,7 +669,7 @@ def get_concrete_design_by_id(design_id):
 
 @app.route('/api/concrete_designs/<int:design_id>', methods=['PUT'])
 def update_concrete_design(design_id):
- if session.get('user_role') not in ['control_calidad', 'vendedor', 'administrador', 'gerencia']: # Removed 'gerencia'
+ if session.get('user_role') not in ['control_calidad']: # Removed 'gerencia'
   return jsonify({'success': False, 'message': 'Acceso denegado'}), 403
 
  data = request.json
@@ -728,7 +723,7 @@ def update_concrete_design(design_id):
 
 @app.route('/api/concrete_designs/delete/<int:design_id>', methods=['POST'])
 def delete_concrete_design(design_id):
- if session.get('user_role') not in ['control_calidad', 'vendedor', 'administrador', 'gerencia']: # Removed 'gerencia'
+ if session.get('user_role') not in ['control_calidad']: # Removed 'gerencia'
   return jsonify({'success': False, 'message': 'Acceso denegado'}), 403
 
  connection = get_db_connection()
@@ -4276,9 +4271,6 @@ def update_precio_unitario_diseno(design_id):
         return jsonify({'success': False, 'message': f'Error al actualizar precio: {str(e)}'}), 500
     finally:
         connection.close()
-
-# --- MODIFICACIÓN FINAL ---
 if __name__ == '__main__':
- port = int(os.environ.get('PORT', 5000))
- # Desactiva el modo debug para producción
- app.run(debug=False, host='0.0.0.0', port=port)
+ port = int(os.environ.get('PORT', 5000))  # Use the port assigned by Railway or 5000 by default
+ app.run(debug=True, host='0.0.0.0', port=port)
