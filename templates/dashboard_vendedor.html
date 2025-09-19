@@ -419,6 +419,96 @@
   </div>
 
 </div>
+  <div id="registro-guias-despacho" class="page">
+      <h2>Registro de Guías de Despacho</h2>
+      <div class="table-container">
+          <table id="despachos-registro-table">
+              <thead>
+                  <tr>
+                      <th>Fecha</th>
+                      <th>N° Guía</th>
+                      <th>M3</th>
+                      <th>Diseño</th>
+                      <th>Cliente</th>
+                      <th>Chofer</th>
+                      <th>Camión</th>
+                      <th>Vendedor</th>
+                      <th>Acciones</th>
+                  </tr>
+              </thead>
+              <tbody>
+                  </tbody>
+          </table>
+      </div>
+  </div>
+
+<div id="view-quotation-modal" class="modal">
+<div class="modal-content">
+    <span class="close" id="close-view-quotation-modal">&times;</span>
+    <h3>Detalles de Cotización <span id="view_quotation_number"></span></h3>
+    <div class="modal-body">
+        <div id="view-quotation-content"></div>
+    </div>
+    <div class="modal-footer flex justify-end gap-2 mt-4">
+        <button type="button" class="btn-add" id="print-quotation-btn"><i class="fas fa-print"></i> Imprimir</button>
+        <button type="button" class="btn-add" id="close-view-quotation-modal-footer">Cerrar</button>
+    </div>
+</div>
+</div>
+
+<div id="purchase-order-details-modal" class="modal">
+      <div class="modal-content" style="max-width: 900px; width: 90%; padding: 0;">
+          <span class="close-po-details-modal">&times;</span>
+          <div id="modal-purchase-order-preview-content" class="diseno-info-container" style="margin-top: 0 !important; border: none; padding: 20px; background-color: #fff;">
+              <div class="preview-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                  <div class="company-info" style="text-align: left;">
+                      <img src="/static/uploads/Logo Prealca Sin Fondo.png" alt="Prealca Logo" style="max-width: 300px; height: auto; margin-bottom: 5px;">
+                      <p style="margin: 0; font-size: 0.8em;">RIF.: J-30913171-0</p>
+                  </div>
+                  <div class="address-info" style="text-align: right; font-size: 0.9em;">
+                      <p style="margin: 0;">Av. 2 parcela E-37, Zona Ind. Sta Cruz</p>
+                      <p style="margin: 0;">Estado Aragua</p>
+                      <p style="margin: 0;">Telf: 04128936930 / Roberto Quintero</p>
+                  </div>
+              </div>
+              <h4 style="text-align: center; margin-bottom: 10px;">ORDEN DE COMPRA: <span id="modal_preview_po_number"></span></h4>
+              <p style="text-align: right; margin-bottom: 20px;">Fecha: <span id="modal_preview_po_date"></span></p>
+              
+              <div class="client-details" style="text-align: left; margin-bottom: 20px; font-size: 0.9em;">
+                  <p style="margin: 0;"><strong>Proveedor:</strong> <span id="modal_preview_client_name"></span></p>
+                  <p style="margin: 0;"><strong>Dirección:</strong> <span id="modal_preview_client_address"></span></p>
+                  <p style="margin: 0;"><strong>Rif:</strong> <span id="modal_preview_client_rif"></span></p>
+                  <p style="margin: 0;"><strong>CONTACTO:</strong> <span id="modal_preview_client_contact"></span></p>
+                  <p style="margin: 0;"><strong>TELF:</strong> <span id="modal_preview_client_phone"></span></p>
+              </div>
+
+              <div class="table-container" style="margin-bottom: 20px;">
+                  <table id="modal-preview-items-table" style="width: 100%; border-collapse: collapse; font-size: 0.9em;">
+                      <thead>
+                          <tr style="background-color: #f2f2f2;">
+                              <th style="border: 1px solid #ddd; padding: 8px; text-align: left;">Material</th>
+                              <th style="border: 1px solid #ddd; padding: 8px; text-align: right;">Cantidad</th>
+                              <th style="border: 1px solid #ddd; padding: 8px; text-align: right;">Precio Unitario</th>
+                              <th style="border: 1px solid #ddd; padding: 8px; text-align: right;">Total</th>
+                          </tr>
+                      </thead>
+                      <tbody id="modal-preview-items-tbody">
+                          </tbody>
+                  </table>
+              </div>
+
+              <div class="totals-summary" style="text-align: right; font-size: 0.9em;">
+                  <p style="margin: 0; font-weight: bold;">TOTAL A PAGAR: <span id="modal_preview_total_to_pay">0.00</span></p>
+              </div>
+              <p style="text-align: left; margin-top: 20px; font-size: 0.9em;">Son: <span id="modal_preview_total_words"></span></p>
+
+              <button id="modal-download-purchase-pdf" class="btn-add" style="margin-top: 20px; display: none;">Descargar PDF</button>
+              <button id="modal-print-purchase-order" class="btn-add" style="margin-top: 20px; margin-left: 10px; display: none;">Imprimir</button>
+          </div>
+      </div>
+  </div>
+
+</div>
 
 <div id="modal-mensaje" class="modal">
 <div class="modal-content">
