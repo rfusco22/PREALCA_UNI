@@ -40,7 +40,6 @@ document.addEventListener("DOMContentLoaded", () => {
   const addUserFotoInput = document.getElementById("user_foto")
 
   // Input fields for Edit User Modal
-  // Input fields for Edit User Modal
   const editUserNameInput = document.getElementById("nombre_user_edit");
   const editUserApellidoInput = document.getElementById("apellido_user_edit");
   // --- INICIO DE LAS CORRECCIONES ---
@@ -1081,4 +1080,5 @@ document.addEventListener("DOMContentLoaded", () => {
     5 * 60 * 1000,
   ) // Every 5 minutes
 })
+
 
