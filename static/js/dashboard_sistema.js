@@ -834,7 +834,11 @@ document.addEventListener("DOMContentLoaded", () => {
       return
     }
 
-    if (confirm(`¿Está seguro de que desea deshabilitar al usuario ${userName}?`)) {
+    const confirmMessage = `¿Está seguro de que desea deshabilitar al usuario ${userName}?\n\nSi es un vendedor, todos sus clientes serán transferidos automáticamente al Vendedor Interno de Prealca y podrán ser restaurados cuando el usuario sea habilitado nuevamente.`
+
+    if (confirm(confirmMessage)) {
+      displayFlashMessage("Deshabilitando usuario y transfiriendo clientes...", "info")
+
       fetch(`/api/admin/users/disable/${userId}`, {
         method: "POST",
         headers: {
@@ -859,7 +863,11 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // NEW: Function to enable a user
   function enableUser(userId, userName) {
-    if (confirm(`¿Está seguro de que desea habilitar al usuario ${userName}?`)) {
+    const confirmMessage = `¿Está seguro de que desea habilitar al usuario ${userName}?\n\nSi es un vendedor, se intentará restaurar sus clientes desde el Vendedor Interno de Prealca.`
+
+    if (confirm(confirmMessage)) {
+      displayFlashMessage("Habilitando usuario y restaurando clientes...", "info")
+
       fetch(`/api/admin/users/enable/${userId}`, {
         method: "POST",
         headers: {
