@@ -496,7 +496,7 @@ function loadPurchaseOrdersTable() {
           <td>${order.fecha}</td>
           <td>${order.proveedor_nombre}</td>
           <td>${formatCurrency(order.total)}</td>
-          <td>${order.status}</td>
+          <td>${traducirEstado(order.status)}</td>
           <td>${actionsHtml}</td>
         `;
         tbody.appendChild(row);
