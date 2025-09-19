@@ -1421,9 +1421,6 @@ def admin_disable_user(id):
     connection = get_db_connection()
     try:
         with connection.cursor() as cursor:
-            if session.get('user_id') == id:
-                return jsonify({'success': False, 'message': 'No puedes deshabilitar tu propia cuenta.'}), 400
-
             # Primero obtener información del usuario a deshabilitar
             sql_get_user = "SELECT rol, cedula, nombre, apellido FROM usuarios WHERE id = %s"
             cursor.execute(sql_get_user, (id,))
