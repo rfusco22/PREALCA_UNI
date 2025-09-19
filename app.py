@@ -565,7 +565,6 @@ def get_all_quotable_items():
 def get_inventario_disenos():
     try:
         resultados = calcular_inventario_disenos()
-        # Directly return the results. This handles empty or populated dicts correctly.
         return jsonify(resultados)
     except Exception as e:
         # It's helpful to log the error on the server for debugging
