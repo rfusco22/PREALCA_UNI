@@ -1982,46 +1982,55 @@ const updateDispatchPreview = () => {
 }
 
 const loadRegistroGuiaDespachoTable = () => {
-  const table = document.getElementById("despachos-registro-table")
-  if (!table) return
+  const table = document.getElementById("despachos-registro-table");
+  if (!table) return;
 
-  const tbody = table.querySelector("tbody")
+  const tbody = table.querySelector("tbody");
 
   fetch("/api/despachos")
     .then((response) => response.json())
     .then((data) => {
-      tbody.innerHTML = ""
+      tbody.innerHTML = "";
+
+      // Verificación clave para evitar el TypeError
+      if (!Array.isArray(data)) {
+        console.error("La respuesta del servidor para guías de despacho no es una lista:", data);
+        throw new Error(data.message || "Error al procesar los datos de guías de despacho.");
+      }
+
       if (data.length === 0) {
         tbody.innerHTML =
-          '<tr><td colspan="10" style="text-align: center;">No hay guías de despacho registradas.</td></tr>'
-        return
+          '<tr><td colspan="9" style="text-align: center;">No hay guías de despacho registradas.</td></tr>';
+        return;
       }
       data.forEach((despacho) => {
-        const row = document.createElement("tr")
+        const row = document.createElement("tr");
         const disenoNombre = despacho.diseno_resistencia
           ? `${despacho.diseno_resistencia} kgf/cm² - ${despacho.diseno_asentamiento}"`
-          : "N/A"
+          : "N/A";
 
         row.innerHTML = `
-  <td>${formatDate(despacho.fecha)}</td>
-  <td>${despacho.guia}</td>
-  <td>${despacho.m3}</td>
-  <td>${disenoNombre}</td>
-  <td>${despacho.cliente_nombre || "N/A"}</td>
-  <td>${despacho.chofer_nombre || "N/A"}</td>
-  <td>${despacho.camion_placa || "N/A"}</td>
-  <td>${despacho.vendedor_nombre || "N/A"}</td>
-  <td>
-    <button class="action-btn view-dispatch-admin" data-id="${despacho.id}" title="Ver"><i class="fas fa-eye"></i></button>
-  </td>
-`
-        tbody.appendChild(row)
-      })
-      setupDispatchActionsAdmin()
+          <td>${despacho.fecha}</td>
+          <td>${despacho.guia}</td>
+          <td>${despacho.m3}</td>
+          <td>${disenoNombre}</td>
+          <td>${despacho.cliente_nombre || "N/A"}</td>
+          <td>${despacho.chofer_nombre || "N/A"}</td>
+          <td>${despacho.camion_placa || "N/A"}</td>
+          <td>${despacho.vendedor_nombre || "N/A"}</td>
+          <td>
+            <button class="action-btn view-dispatch-admin" data-id="${despacho.id}" title="Ver"><i class="fas fa-eye"></i></button>
+          </td>
+        `;
+        tbody.appendChild(row);
+      });
+      setupDispatchActionsAdmin();
     })
-    .catch((error) => console.error("Error al cargar despachos para registro:", error))
-}
-
+    .catch((error) => {
+        console.error("Error al cargar despachos para registro:", error);
+        tbody.innerHTML = `<tr><td colspan="9" class="error-message">Error al cargar guías de despacho: ${error.message}</td></tr>`;
+    });
+};
 const setupDispatchActionsAdmin = () => {
   document.querySelectorAll(".view-dispatch-admin").forEach((button) => {
     button.addEventListener("click", function () {
