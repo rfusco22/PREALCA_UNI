@@ -574,7 +574,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   function handleAddUserSubmit(e) {
     e.preventDefault()
-    console.log("DEBUG JS: Form submission initiated, preventing default.") // ADDED LOG
+    console.log("DEBUG JS: Form submission initiated, preventing default.")
 
     const submitButton = addUserForm.querySelector('button[type="submit"]')
     submitButton.disabled = true
@@ -658,20 +658,22 @@ document.addEventListener("DOMContentLoaded", () => {
     })
       .then((response) => {
         console.log("DEBUG JS: Received raw response from backend:", response)
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`)
-        }
         const contentType = response.headers.get("content-type")
         if (!contentType || !contentType.includes("application/json")) {
           throw new Error("Response is not JSON")
         }
-        return response.json()
+        // Parse JSON regardless of HTTP status code
+        return response.json().then((data) => ({
+          status: response.status,
+          ok: response.ok,
+          data: data,
+        }))
       })
-      .then((data) => {
-        console.log("DEBUG JS: Received parsed JSON data from backend:", data)
-        if (data.success) {
-          console.log("DEBUG JS: Backend reported success:", data.message)
-          displayFlashMessage(data.message, "success")
+      .then((result) => {
+        console.log("DEBUG JS: Received parsed JSON data from backend:", result.data)
+        if (result.ok && result.data.success) {
+          console.log("DEBUG JS: Backend reported success:", result.data.message)
+          displayFlashMessage(result.data.message, "success")
           addUserForm.reset()
           // Clear validation messages and classes after successful submission
           document.querySelectorAll(".field-validation-message").forEach((div) => {
@@ -690,16 +692,25 @@ document.addEventListener("DOMContentLoaded", () => {
           loadUsers() // Reload users table
           showSection("manage-users") // Redirect to manage users after adding
         } else {
-          console.log("DEBUG JS: Backend reported error:", data.message)
-          displayFlashMessage("Error: " + data.message, "error")
+          console.log("DEBUG JS: Backend reported error:", result.data.message)
+          let errorMessage = result.data.message || "Error desconocido"
+
+          // Provide specific messages for common HTTP status codes
+          if (result.status === 409) {
+            errorMessage = result.data.message || "El usuario ya existe en el sistema"
+          } else if (result.status === 500) {
+            errorMessage = result.data.message || "Error interno del servidor"
+          }
+
+          displayFlashMessage("Error: " + errorMessage, "error")
         }
       })
       .catch((error) => {
         console.error("DEBUG JS: Error during fetch:", error)
-        if (error.message.includes("HTTP error! status: 500")) {
-          displayFlashMessage("Error interno del servidor. Por favor, contacte al administrador.", "error")
-        } else if (error.message.includes("Response is not JSON")) {
+        if (error.message.includes("Response is not JSON")) {
           displayFlashMessage("Error de formato en la respuesta del servidor.", "error")
+        } else if (error.name === "TypeError" && error.message.includes("Failed to fetch")) {
+          displayFlashMessage("Error de conexión. Verifique su conexión a internet.", "error")
         } else {
           displayFlashMessage("Error de red o del servidor al agregar usuario.", "error")
         }
@@ -707,7 +718,7 @@ document.addEventListener("DOMContentLoaded", () => {
       .finally(() => {
         submitButton.disabled = false
         submitButton.textContent = "Agregar Usuario"
-        console.log("DEBUG JS: Fetch operation finished, button re-enabled.") // ADDED LOG
+        console.log("DEBUG JS: Fetch operation finished, button re-enabled.")
       })
   }
 
