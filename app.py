@@ -3597,27 +3597,43 @@ def serve_uploads(filename):
     print(f"ERROR: serve_uploads - File not found at: {full_path}")
   return send_from_directory(app.config['UPLOAD_FOLDER'], filename)
 
-# --- API para Proveedores ---
 @app.route('/api/proveedores', methods=['GET'])
 def get_proveedores():
-  connection = get_db_connection()
-  try:
-    with connection.cursor() as cursor:
-      sql = "SELECT * FROM proveedores"
-      cursor.execute(sql)
-      proveedores = cursor.fetchall()
+    connection = get_db_connection()
+    try:
+        with connection.cursor() as cursor:
+            sql = "SELECT * FROM proveedores"
+            cursor.execute(sql)
+            proveedores_db = cursor.fetchall()
 
-      for proveedor in proveedores:
-        sql_materiales = "SELECT id, nombre_material, precio, unidad_medida FROM materiales_proveedor WHERE proveedor_id = %s"
-        cursor.execute(sql_materiales, (proveedor['id'],))
-        proveedor['materiales'] = cursor.fetchall()
+            proveedores_serializable = []
+            for proveedor in proveedores_db:
+                # Obtener los materiales para el proveedor actual
+                sql_materiales = "SELECT id, nombre_material, precio, unidad_medida FROM materiales_proveedor WHERE proveedor_id = %s"
+                cursor.execute(sql_materiales, (proveedor['id'],))
+                materiales_db = cursor.fetchall()
 
-    return jsonify(proveedores)
-  except Exception as e:
-    print(f"Error al obtener proveedores: {str(e)}")
-    return jsonify({'success': False, 'message': f'Error al obtener proveedores: {str(e)}'}), 500
-  finally:
-    connection.close()
+                # Serializar la lista de materiales, convirtiendo el precio a float
+                materiales_serializable = []
+                for material in materiales_db:
+                    materiales_serializable.append({
+                        'id': material['id'],
+                        'nombre_material': material['nombre_material'],
+                        'precio': float(material['precio']) if material['precio'] is not None else 0.0,
+                        'unidad_medida': material['unidad_medida']
+                    })
+
+                # Construir el objeto de proveedor final y añadirlo a la lista
+                proveedor_data = proveedor.copy() # Copiar todos los campos del proveedor
+                proveedor_data['materiales'] = materiales_serializable
+                proveedores_serializable.append(proveedor_data)
+
+        return jsonify(proveedores_serializable)
+    except Exception as e:
+        print(f"Error al obtener proveedores: {str(e)}")
+        return jsonify({'success': False, 'message': f'Error al obtener proveedores: {str(e)}'}), 500
+    finally:
+        connection.close()
 
 
 # Update the add_proveedor route
