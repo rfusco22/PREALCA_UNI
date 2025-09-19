@@ -3945,7 +3945,7 @@ def get_orden_compra_proveedor(order_id):
                FROM ordenes_compra_proveedor o
                JOIN proveedores p ON o.proveedor_id = p.id
                WHERE o.id = %s
-           """ # Corrected alias for proveedor_direccion, proveedor_telefono, proveedor_email
+           """
            cursor.execute(sql_oc, (order_id,))
            order = cursor.fetchone()
 
@@ -3960,19 +3960,34 @@ def get_orden_compra_proveedor(order_id):
                WHERE d.orden_compra_id = %s
            """
            cursor.execute(sql_items, (order_id,))
-           items = cursor.fetchall()
-           
-           order['items'] = items
-           # Convert date to string for JSON serialization
-           if isinstance(order['fecha'], (datetime, date)):
-               order['fecha'] = order['fecha'].strftime('%d/%m/%Y') # Changed format
+           items_db = cursor.fetchall()
+
+           # Serializar la lista de items manualmente
+           items_serializable = []
+           for item in items_db:
+               items_serializable.append({
+                   'material_proveedor_id': item['material_proveedor_id'],
+                   'cantidad': float(item['cantidad']) if item['cantidad'] is not None else 0.0,
+                   'precio_unitario': float(item['precio_unitario']) if item['precio_unitario'] is not None else 0.0,
+                   'subtotal_item': float(item['subtotal_item']) if item['subtotal_item'] is not None else 0.0,
+                   'nombre_material': item['nombre_material'],
+                   'unidad_medida': item['unidad_medida']
+               })
+
+           order['items'] = items_serializable
+
+           # Serializar los campos numéricos del objeto principal 'order'
+           if order.get('total'):
+               order['total'] = float(order['total'])
+           if isinstance(order.get('fecha'), (datetime, date)):
+               order['fecha'] = order['fecha'].strftime('%d/%m/%Y')
 
        return jsonify(order)
    except Exception as e:
        print(f"Error al obtener orden de compra {order_id}: {str(e)}")
        return jsonify({'success': False, 'message': f'Error al obtener orden de compra: {str(e)}'}), 500
    finally:
-       connection.close() # Ensure connection is closed
+       connection.close()
 
 @app.route('/api/ordenes_compra_proveedor/approve/<int:order_id>', methods=['POST'])
 def approve_orden_compra_proveedor(order_id):
