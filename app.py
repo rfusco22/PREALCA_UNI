@@ -3508,41 +3508,41 @@ def list_quotations():
     connection = get_db_connection()
     try:
         with connection.cursor() as cursor:
-            # SQL query to get quotation summary including first item description and total quantity
             sql = """
                 SELECT
-                    c.id,
-                    c.quotation_number,
-                    c.quotation_date,
-                    c.client_name,
-                    c.seller_name,
-                    c.total_amount,
-                    c.validity_days,
-                    c.notes,
-                    c.status,
+                    c.id, c.quotation_number, c.quotation_date, c.client_name, c.seller_name,
+                    c.total_amount, c.validity_days, c.notes, c.status,
                     SUM(ci.quantity) AS total_quantity,
                     CASE
                         WHEN COUNT(ci.id) = 1 THEN MAX(ci.description)
                         ELSE 'Múltiples ítems'
                     END AS item_summary_description
-                FROM
-                    cotizacion c
-                LEFT JOIN
-                    cotizacion_items ci ON c.id = ci.quotation_id
-                GROUP BY
-                    c.id, c.quotation_number, c.quotation_date, c.client_name, c.seller_name, c.total_amount, c.validity_days, c.notes, c.status
-                ORDER BY
-                    c.quotation_date DESC, c.quotation_number DESC
+                FROM cotizacion c
+                LEFT JOIN cotizacion_items ci ON c.id = ci.quotation_id
+                GROUP BY c.id
+                ORDER BY c.quotation_date DESC, c.quotation_number DESC
             """
             cursor.execute(sql)
-            quotations = cursor.fetchall()
+            quotations_db = cursor.fetchall()
 
-            # Format the quotation_date
-            for quotation in quotations:
-                if isinstance(quotation['quotation_date'], (datetime, date)):
-                    quotation['quotation_date'] = quotation['quotation_date'].strftime('%d/%m/%Y')
+        # Construir la lista manualmente para ser compatible con JSON
+        quotations_serializable = []
+        for q in quotations_db:
+            quotations_serializable.append({
+                'id': q['id'],
+                'quotation_number': q['quotation_number'],
+                'quotation_date': q['quotation_date'].strftime('%d/%m/%Y') if isinstance(q['quotation_date'], (datetime, date)) else q['quotation_date'],
+                'client_name': q['client_name'],
+                'seller_name': q['seller_name'],
+                'total_amount': float(q['total_amount']) if q['total_amount'] is not None else 0.0,
+                'validity_days': q['validity_days'],
+                'notes': q['notes'],
+                'status': q['status'],
+                'total_quantity': float(q['total_quantity']) if q['total_quantity'] is not None else 0.0,
+                'item_summary_description': q['item_summary_description']
+            })
 
-            return jsonify(quotations)
+        return jsonify(quotations_serializable)
     except Exception as e:
         print(f"Error listing quotations: {str(e)}")
         return jsonify({'success': False, 'message': f'Error al listar cotizaciones: {str(e)}'}), 500
