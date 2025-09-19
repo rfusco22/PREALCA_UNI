@@ -1202,47 +1202,49 @@ def admin_add_user():
         if connection:
             connection.close()
 
-# API para listar usuarios (para el administrador)
 @app.route('/api/admin/users/list', methods=['GET'])
 def admin_list_users():
- if session.get('user_role') not in ['administrador', 'gerencia', 'vendedor', 'sistema']:
-  return jsonify({'success': False, 'message': 'Acceso denegado'}), 403
+    if session.get('user_role') not in ['administrador', 'gerencia', 'vendedor', 'sistema']:
+        return jsonify({'success': False, 'message': 'Acceso denegado'}), 403
 
- connection = get_db_connection()
- try:
-  with connection.cursor() as cursor:
-   # MODIFIED: Added 'status' to the SELECT query
-   sql = "SELECT id, nombre, apellido, correo, rol, last_active, foto, status FROM usuarios"
-   cursor.execute(sql)
-   users = cursor.fetchall()
-  
-  online_threshold_minutes = 1 
-  current_time = datetime.now()
+    connection = get_db_connection()
+    try:
+        with connection.cursor() as cursor:
+            sql = "SELECT id, nombre, apellido, correo, rol, last_active, foto, status FROM usuarios"
+            cursor.execute(sql)
+            users = cursor.fetchall()
+        
+        online_threshold_minutes = 1 
+        current_time = datetime.now()
 
-  for user in users:
-   user['last_active_display'] = format_last_active_display(user['last_active'])
-   if user['last_active']:
-    last_active_dt = user['last_active']
-    if isinstance(last_active_dt, str):
-     try:
-      last_active_dt = datetime.strptime(last_active_dt, '%Y-%m-%d %H:%M:%S')
-     except ValueError:
-      last_active_dt = datetime.min
-    
-   if (current_time - last_active_dt).total_seconds() < (online_threshold_minutes * 60):
-    user['status_online'] = 'Online' # Renamed to avoid conflict with DB 'status'
-   else:
-    user['status_online'] = 'Offline' # Renamed to avoid conflict with DB 'status'
-   
-   # Add account status based on DB 'status' column
-   user['account_status'] = 'Activo' if user['status'] == 'active' else 'Deshabilitado'
+        for user in users:
+            user['last_active_display'] = format_last_active_display(user['last_active'])
+            if user['last_active']:
+                last_active_dt = user['last_active']
+                if isinstance(last_active_dt, str):
+                    try:
+                        last_active_dt = datetime.strptime(last_active_dt, '%Y-%m-%d %H:%M:%S')
+                    except ValueError:
+                        last_active_dt = datetime.min
+                
+                if (current_time - last_active_dt).total_seconds() < (online_threshold_minutes * 60):
+                    user['status_online'] = 'Online'
+                else:
+                    user['status_online'] = 'Offline'
+            else:
+                user['status_online'] = 'Offline'
+            
+            user['account_status'] = 'Activo' if user['status'] == 'active' else 'Deshabilitado'
 
-  return jsonify(users)
- except Exception as e:
-  print(f"Error listing users: {str(e)}")
-  return jsonify({'success': False, 'message': f'Error al listar usuarios: {str(e)}'}), 500
- finally:
-  connection.close()
+        return jsonify(users)
+    except Exception as e:
+        print(f"Error listing users: {str(e)}")
+        return jsonify({'success': False, 'message': f'Error al listar usuarios: {str(e)}'}), 500
+    # --- INICIO DE LA CORRECCIÓN ---
+    finally:
+        if connection:
+            connection.close()
+    # --- FIN DE LA CORRECCIÓN ---
 
 # API para obtener un usuario por ID (para el administrador)
 @app.route('/api/admin/users/<int:id>', methods=['GET'])
