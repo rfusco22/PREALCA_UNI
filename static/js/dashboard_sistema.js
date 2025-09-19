@@ -573,48 +573,48 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   function handleAddUserSubmit(e) {
-    e.preventDefault()
-    console.log("DEBUG JS: Form submission initiated, preventing default.")
+    e.preventDefault();
+    console.log("DEBUG JS: Form submission initiated, preventing default.");
 
-    const submitButton = addUserForm.querySelector('button[type="submit"]')
-    submitButton.disabled = true
-    submitButton.textContent = "Agregando Usuario..."
+    const submitButton = addUserForm.querySelector('button[type="submit"]');
+    submitButton.disabled = true;
+    submitButton.textContent = "Agregando Usuario...";
 
     // Run all client-side validations
-    const isNameValid = validateName(addUserNameInput, document.getElementById("user_nombre_validation_message"))
+    const isNameValid = validateName(addUserNameInput, document.getElementById("user_nombre_validation_message"));
     const isApellidoValid = validateName(
       addUserApellidoInput,
       document.getElementById("user_apellido_validation_message"),
-    )
+    );
     const isDocumentValid = validateDocument(
       addUserDocPrefixInput,
       addUserDocNumberInput,
       document.getElementById("user_documento_validation_message"),
-    )
-    const isEmailValid = validateEmail(addUserCorreoInput, document.getElementById("user_correo_validation_message"))
+    );
+    const isEmailValid = validateEmail(addUserCorreoInput, document.getElementById("user_correo_validation_message"));
     const isPasswordValid = validatePassword(
       addUserContrasenaInput,
       document.getElementById("user_contrasena_validation_message"),
-    )
+    );
     const isAddressValid = validateAddress(
       addUserDireccionInput,
       document.getElementById("direccion_validation_message"),
-    )
+    );
     const isPhoneValid = validatePhone(
       addUserTelefonoPrefixInput,
       addUserTelefonoNumberInput,
       document.getElementById("telefono_validation_message"),
-    )
-    const isFotoValid = validateFile(addUserFotoInput, document.getElementById("user_foto_validation_message"))
+    );
+    const isFotoValid = validateFile(addUserFotoInput, document.getElementById("user_foto_validation_message"));
 
     // Check if all required fields are filled and valid
-    const isRolSelected = document.getElementById("user_rol").value !== ""
+    const isRolSelected = document.getElementById("user_rol").value !== "";
 
     if (!isRolSelected) {
-      displayFlashMessage("Por favor, seleccione un rol para el usuario.", "error")
-      submitButton.disabled = false
-      submitButton.textContent = "Agregar Usuario"
-      return
+      displayFlashMessage("Por favor, seleccione un rol para el usuario.", "error");
+      submitButton.disabled = false;
+      submitButton.textContent = "Agregar Usuario";
+      return;
     }
 
     if (
@@ -628,105 +628,76 @@ document.addEventListener("DOMContentLoaded", () => {
       !isFotoValid ||
       !isRolSelected
     ) {
-      console.log("DEBUG JS: Client-side validation failed.")
-      displayFlashMessage("Por favor, corrija los errores en el formulario.", "error")
-      submitButton.disabled = false
-      submitButton.textContent = "Agregar Usuario"
-      return
+      console.log("DEBUG JS: Client-side validation failed.");
+      displayFlashMessage("Por favor, corrija los errores en el formulario.", "error");
+      submitButton.disabled = false;
+      submitButton.textContent = "Agregar Usuario";
+      return;
     }
 
-    const formData = new FormData(addUserForm)
+    const formData = new FormData(addUserForm);
 
     // Add the selected role to formData
-    formData.append("rol", document.getElementById("user_rol").value)
+    formData.append("rol", document.getElementById("user_rol").value);
 
-    // Add the combined document to formData (backend expects 'cedula')
-    formData.append("cedula", `${addUserDocPrefixInput.value}-${addUserDocNumberInput.value.trim()}`)
+    // The backend now expects the combined 'cedula' and 'telefono' fields
+    // These are constructed in the backend from the form parts,
+    // so we don't need to append them manually here.
 
-    const combinedPhone = `${addUserTelefonoPrefixInput.value}${addUserTelefonoNumberInput.value.trim()}`
-    formData.append("telefono", combinedPhone)
-    formData.append("telefono_prefix", addUserTelefonoPrefixInput.value)
-    formData.append("telefono_number", addUserTelefonoNumberInput.value.trim())
-
-    // DEBUG: Log FormData content
-    console.log("DEBUG JS: FormData content before fetch:")
+    console.log("DEBUG JS: FormData content before fetch:");
     for (const pair of formData.entries()) {
-      console.log(pair[0] + ": " + pair[1])
+      console.log(pair[0] + ": " + pair[1]);
     }
 
     fetch(addUserForm.action, {
       method: addUserForm.method,
       body: formData,
     })
-      .then((response) => {
-        console.log("DEBUG JS: Received raw response from backend:", response)
-        const contentType = response.headers.get("content-type")
-        if (!contentType || !contentType.includes("application/json")) {
-          throw new Error("Response is not JSON")
-        }
-        // Parse JSON regardless of HTTP status code
-        return response.json().then((data) => ({
-          status: response.status,
+      .then(response => {
+        // Always try to parse JSON, regardless of the status code
+        return response.json().then(data => ({
           ok: response.ok,
-          data: data,
-        }))
+          status: response.status,
+          data: data
+        }));
       })
-      .then((result) => {
-        console.log("DEBUG JS: Received parsed JSON data from backend:", result.data)
+      .then(result => {
+        console.log("DEBUG JS: Received parsed JSON data from backend:", result.data);
         if (result.ok && result.data.success) {
-          console.log("DEBUG JS: Backend reported success:", result.data.message)
-          displayFlashMessage(result.data.message, "success")
-          addUserForm.reset()
+          console.log("DEBUG JS: Backend reported success:", result.data.message);
+          displayFlashMessage(result.data.message, "success");
+          addUserForm.reset();
           // Clear validation messages and classes after successful submission
           document.querySelectorAll(".field-validation-message").forEach((div) => {
-            div.textContent = ""
-            div.classList.remove("error", "success")
-          })
+            div.textContent = "";
+            div.classList.remove("error", "success");
+          });
           document.querySelectorAll("input, select").forEach((input) => {
-            input.classList.remove("field-valid", "field-invalid")
-          })
+            input.classList.remove("field-valid", "field-invalid");
+          });
           // Hide photo preview
-          const userFotoPreview = document.getElementById("user_foto_preview")
+          const userFotoPreview = document.getElementById("user_foto_preview");
           if (userFotoPreview) {
-            userFotoPreview.style.display = "none"
-            userFotoPreview.src = ""
+            userFotoPreview.style.display = "none";
+            userFotoPreview.src = "";
           }
-          loadUsers() // Reload users table
-          showSection("manage-users") // Redirect to manage users after adding
+          loadUsers(); // Reload users table
+          showSection("manage-users"); // Redirect to manage users after adding
         } else {
-          console.log("DEBUG JS: Backend reported error:", result.data.message)
-          let errorMessage = result.data.message || "Error desconocido"
-
-          // Provide specific messages for common HTTP status codes
-          if (result.status === 409) {
-            errorMessage =
-              result.data.message ||
-              "El usuario ya existe en el sistema. Por favor, verifique el documento o correo electrónico."
-            displayFlashMessage(errorMessage, "error")
-          } else if (result.status === 500) {
-            errorMessage = result.data.message || "Error interno del servidor. Por favor, contacte al administrador."
-            displayFlashMessage("Error: " + errorMessage, "error")
-          } else {
-            displayFlashMessage("Error: " + errorMessage, "error")
-          }
+          // If the response is not OK (e.g., 409) or success is false
+          throw new Error(result.data.message || `Error del servidor: ${result.status}`);
         }
       })
-      .catch((error) => {
-        console.error("DEBUG JS: Error during fetch:", error)
-        if (error.message.includes("Response is not JSON")) {
-          displayFlashMessage("Error de formato en la respuesta del servidor.", "error")
-        } else if (error.name === "TypeError" && error.message.includes("Failed to fetch")) {
-          displayFlashMessage("Error de conexión. Verifique su conexión a internet.", "error")
-        } else {
-          displayFlashMessage("Error de red o del servidor al agregar usuario.", "error")
-        }
+      .catch(error => {
+        console.error("DEBUG JS: Error during fetch:", error);
+        displayFlashMessage(error.message, "error");
       })
       .finally(() => {
-        submitButton.disabled = false
-        submitButton.textContent = "Agregar Usuario"
-        console.log("DEBUG JS: Fetch operation finished, button re-enabled.")
-      })
-  }
+        submitButton.disabled = false;
+        submitButton.textContent = "Agregar Usuario";
+        console.log("DEBUG JS: Fetch operation finished, button re-enabled.");
+      });
+}
 
   // --- User Management (Sistema Dashboard) ---
 
@@ -1015,3 +986,4 @@ document.addEventListener("DOMContentLoaded", () => {
     5 * 60 * 1000,
   ) // Every 5 minutes
 })
+
