@@ -4033,58 +4033,58 @@ def add_material_request():
 
 @app.route('/api/material_requests/list', methods=['GET'])
 def list_material_requests():
-   if session.get('user_role') not in ['control_calidad', 'administrador', 'gerencia']:
-       return jsonify({'success': False, 'message': 'Acceso denegado'}), 403
+    if session.get('user_role') not in ['control_calidad', 'administrador', 'gerencia']:
+        return jsonify({'success': False, 'message': 'Acceso denegado'}), 403
 
-   connection = get_db_connection()
-   try:
-       with connection.cursor() as cursor:
-           user_role = session.get('user_role')
-           user_id = session.get('user_id')
+    connection = get_db_connection()
+    try:
+        with connection.cursor() as cursor:
+            user_role = session.get('user_role')
+            user_id = session.get('user_id')
 
-           sql = """
-               SELECT mr.*, u.nombre as requester_name, u.apellido as requester_apellido,
-                      r.nombre as responder_name, r.apellido as responder_apellido
-               FROM material_requests mr
-               JOIN usuarios u ON mr.requested_by_user_id = u.id
-               LEFT JOIN usuarios r ON mr.responded_by_user_id = r.id
-           """
-           params = []
+            sql = """
+                SELECT mr.*, u.nombre as requester_name, u.apellido as requester_apellido,
+                       r.nombre as responder_name, r.apellido as responder_apellido
+                FROM material_requests mr
+                JOIN usuarios u ON mr.requested_by_user_id = u.id
+                LEFT JOIN usuarios r ON mr.responded_by_user_id = r.id
+            """
+            params = []
 
-           if user_role == 'control_calidad':
-               sql += " WHERE mr.requested_by_user_id = %s"
-               params.append(user_id)
-           
-           sql += " ORDER BY mr.request_date DESC"
-           
-           cursor.execute(sql, tuple(params))
-           requests = cursor.fetchall()
+            if user_role == 'control_calidad':
+                sql += " WHERE mr.requested_by_user_id = %s"
+                params.append(user_id)
 
-           for req in requests:
-               if isinstance(req['request_date'], datetime):
-                   req['request_date'] = req['request_date'].strftime('%d/%m/%Y %H:%M:%S') # Changed format
-               if req['response_date'] and isinstance(req['response_date'], datetime):
-                   req['response_date'] = req['response_date'].strftime('%d/%m/%Y %H:%M:%S') # Changed format
-               
-               # Combine requester name and apellido
-               req['requester_full_name'] = f"{req['requester_name']} {req['requester_apellido']}"
-               del req['requester_name']
-               del req['requester_apellido']
+            sql += " ORDER BY mr.request_date DESC"
 
-               # Combine responder name and apellido if available
-               if req['responder_name'] and req['responder_apellido']:
-                   req['responder_full_name'] = f"{req['responder_name']} {req['responder_apellido']}"
-               else:
-                   req['responder_full_name'] = None
-               del req['responder_name']
-               del req['responder_apellido']
+            cursor.execute(sql, tuple(params))
+            requests_db = cursor.fetchall()
 
-       return jsonify(requests)
-   except Exception as e:
-       print(f"Error listing material requests: {str(e)}")
-       return jsonify({'success': False, 'message': f'Error al listar solicitudes de material: {str(e)}'}), 500
-   finally:
-       connection.close()
+            # Construir manualmente la lista para asegurar compatibilidad con JSON
+            requests_serializable = []
+            for req in requests_db:
+                requester_full_name = f"{req['requester_name']} {req['requester_apellido']}"
+                responder_full_name = f"{req['responder_name']} {req['responder_apellido']}" if req['responder_name'] and req['responder_apellido'] else None
+
+                requests_serializable.append({
+                    'id': req['id'],
+                    'request_date': req['request_date'].strftime('%d/%m/%Y %H:%M:%S') if isinstance(req['request_date'], datetime) else req['request_date'],
+                    'material_name': req['material_name'],
+                    'quantity_requested': float(req['quantity_requested']) if req['quantity_requested'] is not None else 0.0,
+                    'unit': req['unit'],
+                    'reason': req['reason'],
+                    'status': req['status'],
+                    'response_date': req['response_date'].strftime('%d/%m/%Y %H:%M:%S') if req['response_date'] and isinstance(req['response_date'], datetime) else None,
+                    'requester_full_name': requester_full_name,
+                    'responder_full_name': responder_full_name
+                })
+
+        return jsonify(requests_serializable)
+    except Exception as e:
+        print(f"Error listing material requests: {str(e)}")
+        return jsonify({'success': False, 'message': f'Error al listar solicitudes de material: {str(e)}'}), 500
+    finally:
+        connection.close()
 
 @app.route('/api/material_requests/approve/<int:request_id>', methods=['POST'])
 def approve_material_request(request_id):
