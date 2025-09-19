@@ -30,7 +30,7 @@ app.config['MAIL_USERNAME'] = 'fuscoriccardo11@gmail.com'
 # --- INICIO DE LA CORRECCIÓN ---
 # REEMPLAZA tu contraseña actual por la contraseña de aplicación de 16 caracteres
 # Asegúrate de no incluir espacios.
-app.config['MAIL_PASSWORD'] = 'fsqa yqdg dxgh smlo'
+app.config['MAIL_PASSWORD'] = 'fsqayqdgdxghsmlo'
 # --- FIN DE LA CORRECCIÓN ---
 mail = Mail(app)
 
