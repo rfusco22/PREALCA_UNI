@@ -825,157 +825,62 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   // MODIFIED: Renamed from deleteUser to disableUser
-  function disableUser(userId, userName) {
-    if (userId === 1) {
-      displayFlashMessage(
-        "No se puede deshabilitar al Usuario Vendedor Interno de Prealca (ID: 1). Este usuario debe permanecer siempre activo.",
-        "error",
-      )
-      return
-    }
-
-    const confirmMessage = `¿Está seguro de que desea deshabilitar al usuario ${userName}?\n\nSi es un vendedor, todos sus clientes serán transferidos automáticamente al Vendedor Interno de Prealca y podrán ser restaurados cuando el usuario sea habilitado nuevamente.`
-
-    if (confirm(confirmMessage)) {
-      displayFlashMessage("Deshabilitando usuario y transfiriendo clientes...", "info")
-
-      fetch(`/api/admin/users/disable/${userId}`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-      })
-        .then((response) => response.json())
-        .then((data) => {
-          if (data.success) {
-            displayFlashMessage(data.message, "success")
-            loadUsers() // Reload users table
-          } else {
-            displayFlashMessage("Error: " + data.message, "error")
-          }
-        })
-        .catch((error) => {
-          console.error("Error disabling user:", error)
-          displayFlashMessage("Error de red o del servidor al deshabilitar usuario.", "error")
-        })
-    }
+function disableUser(userId, userName) {
+  if (userId === 1) {
+    displayFlashMessage(
+      "No se puede deshabilitar al Usuario Vendedor Interno de Prealca (ID: 1). Este usuario debe permanecer siempre activo.",
+      "error",
+    )
+    return
   }
 
-  // NEW: Function to enable a user
-  function enableUser(userId, userName) {
-    const confirmMessage = `¿Está seguro de que desea habilitar al usuario ${userName}?\n\nSi es un vendedor, se intentará restaurar sus clientes desde el Vendedor Interno de Prealca.`
-
-    if (confirm(confirmMessage)) {
-      displayFlashMessage("Habilitando usuario y restaurando clientes...", "info")
-
-      fetch(`/api/admin/users/enable/${userId}`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-      })
-        .then((response) => response.json())
-        .then((data) => {
-          if (data.success) {
-            displayFlashMessage(data.message, "success")
-            loadUsers() // Reload users table
-          } else {
-            displayFlashMessage("Error: " + data.message, "error")
-          }
-        })
-        .catch((error) => {
-          console.error("Error enabling user:", error)
-          displayFlashMessage("Error de red o del servidor al habilitar usuario.", "error")
-        })
-    }
-  }
-
-  // Handle photo preview for Add User form
-  if (fotoInput) {
-    fotoInput.addEventListener("change", function () {
-      const previewElement = document.getElementById("user_foto_preview") || document.createElement("img")
-      if (!document.getElementById("user_foto_preview")) {
-        previewElement.id = "user_foto_preview"
-        previewElement.style.width = "100px"
-        previewElement.style.height = "100px"
-        previewElement.style.objectFit = "cover"
-        previewElement.style.borderRadius = "50%"
-        previewElement.style.marginTop = "5px"
-        // Insert it after the file input's parent form-group
-        this.closest(".form-group").appendChild(previewElement)
-      }
-
-      if (this.files && this.files[0]) {
-        const reader = new FileReader()
-        reader.onload = (e) => {
-          previewElement.src = e.target.result
-          previewElement.style.display = "block"
+  if (confirm(`¿Está seguro de que desea deshabilitar al usuario ${userName}?`)) {
+    fetch(`/api/admin/users/disable/${userId}`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+    })
+      .then((response) => response.json())
+      .then((data) => {
+        if (data.success) {
+          displayFlashMessage(data.message, "success")
+          loadUsers() // Reload users table
+        } else {
+          displayFlashMessage("Error: " + data.message, "error")
         }
-        reader.readAsDataURL(this.files[0])
-      } else {
-        previewElement.style.display = "none"
-        previewElement.src = ""
-      }
-    })
-  }
-
-  // Handle photo preview for Edit User form
-  if (editUserFotoInput) {
-    editUserFotoInput.addEventListener("change", function () {
-      if (this.files && this.files[0]) {
-        const reader = new FileReader()
-        reader.onload = (e) => {
-          currentFotoPreview.src = e.target.result
-        }
-        reader.readAsDataURL(this.files[0])
-      }
-    })
-  }
-
-  // --- Profile Management (Usuario Logueado) ---
-  // (Assuming these are handled by dashboard_admin.js or another script)
-  // Open Edit Profile Modal
-  if (editProfileBtn) {
-    editProfileBtn.addEventListener("click", () => {
-      // Pre-fill form with current user data (already in HTML via Jinja)
-      // Ensure the photo preview is correct
-      const currentPhotoSrc = document.querySelector(".profile-avatar").src
-      if (editCurrentFotoPreview) editCurrentFotoPreview.src = currentPhotoSrc
-      if (editProfileModal) editProfileModal.style.display = "block"
-    })
-  }
-
-  // Handle Edit Profile Form Submission
-  if (editProfileForm) {
-    editProfileForm.addEventListener("submit", (e) => {
-      e.preventDefault()
-
-      const formData = new FormData(editProfileForm)
-      // The current user's ID is available in the session, no need to pass it from form
-      // The backend will use session['user_id']
-
-      fetch("/api/admin/users/" + window.userInfo.id, {
-        // Assuming this endpoint updates the logged-in user
-        method: "POST",
-        body: formData,
       })
-        .then((response) => response.json())
-        .then((data) => {
-          if (data.success) {
-            displayFlashMessage(data.message, "success")
-            if (editProfileModal) editProfileModal.style.display = "none"
-            // Reload page to reflect changes in header/profile section
-            window.location.reload()
-          } else {
-            displayFlashMessage("Error al actualizar perfil: " + data.message, "error")
-          }
-        })
-        .catch((error) => {
-          console.error("Error updating profile:", error)
-          displayFlashMessage("Error de red o del servidor al actualizar perfil.", "error")
-        })
-    })
+      .catch((error) => {
+        console.error("Error disabling user:", error)
+        displayFlashMessage("Error de red o del servidor al deshabilitar usuario.", "error")
+      })
   }
+}
+
+// NEW: Function to enable a user
+function enableUser(userId, userName) {
+  if (confirm(`¿Está seguro de que desea habilitar al usuario ${userName}?`)) {
+    fetch(`/api/admin/users/enable/${userId}`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+    })
+      .then((response) => response.json())
+      .then((data) => {
+        if (data.success) {
+          displayFlashMessage(data.message, "success")
+          loadUsers() // Reload users table
+        } else {
+          displayFlashMessage("Error: " + data.message, "error")
+        }
+      })
+      .catch((error) => {
+        console.error("Error enabling user:", error)
+        displayFlashMessage("Error de red o del servidor al habilitar usuario.", "error")
+      })
+  }
+}
 
   // Open Change Password Modal
   if (changePasswordBtn) {
@@ -1086,3 +991,4 @@ document.addEventListener("DOMContentLoaded", () => {
     5 * 60 * 1000,
   ) // Every 5 minutes
 })
+
