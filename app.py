@@ -3597,6 +3597,8 @@ def list_quotations():
     finally:
         connection.close()
 
+# app.py
+
 @app.route('/api/quotations/<int:quotation_id>', methods=['GET'])
 def get_quotation_by_id(quotation_id):
     if session.get('user_role') not in ['administrador', 'gerencia', 'vendedor']:
@@ -3605,9 +3607,7 @@ def get_quotation_by_id(quotation_id):
     connection = get_db_connection()
     try:
         with connection.cursor() as cursor:
-            # ****** INICIO: ACTUALIZAR CONSULTA SQL ******
             sql_quotation = "SELECT *, include_freight, freight_cost FROM cotizacion WHERE id = %s"
-            # ****** FIN: ACTUALIZAR CONSULTA SQL ******
             cursor.execute(sql_quotation, (quotation_id,))
             quotation = cursor.fetchone()
 
@@ -3618,6 +3618,17 @@ def get_quotation_by_id(quotation_id):
             cursor.execute(sql_items, (quotation_id,))
             items = cursor.fetchall()
             
+            # Convert Decimal types in the quotation dictionary
+            for key in quotation:
+                if isinstance(quotation[key], Decimal):
+                    quotation[key] = float(quotation[key])
+
+            # Convert Decimal types in the items list
+            for item in items:
+                for key in item:
+                    if isinstance(item[key], Decimal):
+                        item[key] = float(item[key])
+
             quotation['items'] = items
             if isinstance(quotation['quotation_date'], (datetime, date)):
                 quotation['quotation_date'] = quotation['quotation_date'].strftime('%Y-%m-%d')
