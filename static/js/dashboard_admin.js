@@ -960,14 +960,14 @@ function setupPurchaseOrderDetailsModal() {
 
 // Function to view dispatch details in the modal (reused from Gerencia)
 
-// NEW: Load Material Requests Table for Admin
+// Change `loadAdminMaterialRequestsTable()` function to handle Spanish status and hide buttons
 function loadAdminMaterialRequestsTable() {
   const table = document.getElementById("admin-material-requests-table")
   if (!table) return
 
   const tbody = table.querySelector("tbody")
 
-  fetch("/api/material_requests/list") // This endpoint already filters by role on backend
+  fetch("/api/material_requests/list")
     .then((response) => {
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`)
@@ -982,34 +982,39 @@ function loadAdminMaterialRequestsTable() {
       }
       data.forEach((request) => {
         const row = document.createElement("tr")
+        let statusText = ""
         let statusClass = ""
         let actionsHtml = ""
 
+        // Map English status to Spanish text and set actionsHtml based on status
         if (request.status === "pending") {
-          statusClass = "status-pending"
+          statusText = "Pendiente";
+          statusClass = "status-pending";
           actionsHtml = `
-                          <button class="action-btn approve-material-request" data-id="${request.id}" title="Aprobar"><i class="fas fa-check"></i></button>
-                          <button class="action-btn deny-material-request" data-id="${request.id}" title="Denegar"><i class="fas fa-times"></i></button>
-                      `
+            <button class="action-btn approve-material-request" data-id="${request.id}" title="Aprobar"><i class="fas fa-check"></i></button>
+            <button class="action-btn deny-material-request" data-id="${request.id}" title="Denegar"><i class="fas fa-times"></i></button>
+          `;
         } else if (request.status === "approved") {
-          statusClass = "status-approved"
-          actionsHtml = `<span class="text-green-600">Aprobada</span>` // Or a view button
+          statusText = "Aprobado";
+          statusClass = "status-approved";
+          actionsHtml = ""; // Empty string for approved status
         } else if (request.status === "denied") {
-          statusClass = "status-denied"
-          actionsHtml = `<span class="text-red-600">Denegada</span>` // Or a view button
+          statusText = "Denegado";
+          statusClass = "status-denied";
+          actionsHtml = ""; // Empty string for denied status
         }
 
         row.innerHTML = `
-                      <td>${formatDate(request.request_date)}</td>
-                      <td>${request.requester_full_name || "N/A"}</td>
-                      <td>${request.material_name}</td>
-                      <td>${request.quantity_requested}</td>
-                      <td>${request.unit}</td>
-                      <td>${request.reason || "N/A"}</td>
-                      <td><span class="status-badge ${statusClass}">${request.status.charAt(0).toUpperCase() + request.status.slice(1)}</span></td>
-                      <td>${request.responder_full_name || "N/A"}</td>
-                      <td>${actionsHtml}</td>
-                  `
+          <td>${formatDate(request.request_date)}</td>
+          <td>${request.requester_full_name || "N/A"}</td>
+          <td>${request.material_name}</td>
+          <td>${request.quantity_requested}</td>
+          <td>${request.unit}</td>
+          <td>${request.reason || "N/A"}</td>
+          <td><span class="status-badge ${statusClass}">${statusText}</span></td>
+          <td>${request.responder_full_name || "N/A"}</td>
+          <td>${actionsHtml}</td>
+        `;
         tbody.appendChild(row)
       })
       setupAdminMaterialRequestActions()
