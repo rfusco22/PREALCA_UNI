@@ -643,8 +643,10 @@ document.addEventListener("DOMContentLoaded", () => {
     // Add the combined document to formData (backend expects 'cedula')
     formData.append("cedula", `${addUserDocPrefixInput.value}-${addUserDocNumberInput.value.trim()}`)
 
-    // Add the combined phone to formData (backend expects 'telefono')
-    formData.append("telefono", `${addUserTelefonoPrefixInput.value}${addUserTelefonoNumberInput.value.trim()}`)
+    const combinedPhone = `${addUserTelefonoPrefixInput.value}${addUserTelefonoNumberInput.value.trim()}`
+    formData.append("telefono", combinedPhone)
+    formData.append("telefono_prefix", addUserTelefonoPrefixInput.value)
+    formData.append("telefono_number", addUserTelefonoNumberInput.value.trim())
 
     // DEBUG: Log FormData content
     console.log("DEBUG JS: FormData content before fetch:")
