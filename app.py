@@ -3508,6 +3508,7 @@ def list_quotations():
     connection = get_db_connection()
     try:
         with connection.cursor() as cursor:
+            # La consulta SQL se mantiene igual, pero obtenemos los datos crudos
             sql = """
                 SELECT
                     c.id, c.quotation_number, c.quotation_date, c.client_name, c.seller_name,
