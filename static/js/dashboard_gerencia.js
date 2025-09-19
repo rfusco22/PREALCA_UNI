@@ -808,8 +808,10 @@ function loadSupplierPurchaseOrdersTable(forceRefresh = false) {
       data.forEach((order) => {
         const row = document.createElement("tr")
         let actionsHtml = ""
+        let statusSpanish = "";
 
         if (order.status === "pending") {
+          statusSpanish = "Pendiente";
           actionsHtml = `
             <div class="actions-row">
               <button class="action-icon-btn view-btn view-supplier-po-btn" data-id="${order.id}" title="Ver">
@@ -824,6 +826,7 @@ function loadSupplierPurchaseOrdersTable(forceRefresh = false) {
             </div>
           `
         } else if (order.status === "approved") {
+          statusSpanish = "Aprobado";
           actionsHtml = `
             <div class="actions-row">
               <button class="action-icon-btn view-btn view-supplier-po-btn" data-id="${order.id}" title="Ver">
@@ -835,6 +838,7 @@ function loadSupplierPurchaseOrdersTable(forceRefresh = false) {
             </div>
           `
         } else if (order.status === "denied") {
+          statusSpanish = "Denegado";
           actionsHtml = `
             <div class="actions-row">
               <button class="action-icon-btn view-btn view-supplier-po-btn" data-id="${order.id}" title="Ver">
@@ -849,7 +853,7 @@ function loadSupplierPurchaseOrdersTable(forceRefresh = false) {
           <td>${order.fecha}</td>
           <td>${order.proveedor_nombre}</td>
           <td>${Number.parseFloat(order.total).toFixed(2)}</td>
-          <td>${order.status}</td>
+          <td>${statusSpanish}</td>
           <td>${actionsHtml}</td>
         `
         tbody.appendChild(row)
@@ -1367,3 +1371,4 @@ function convertNumberToWords(num) {
   return words.toUpperCase();
 
 }
+
