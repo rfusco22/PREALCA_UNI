@@ -462,45 +462,51 @@ function setupPurchaseGuideForm() {
   }
 }
 
-// NEW: Load Purchase Orders Table (for supplier POs)
 function loadPurchaseOrdersTable() {
-  const table = document.getElementById("purchase-orders-table")
-  if (!table) return
+  const table = document.getElementById("purchase-orders-table");
+  if (!table) return;
 
-  const tbody = table.querySelector("tbody")
+  const tbody = table.querySelector("tbody");
 
   fetch("/api/ordenes_compra_proveedor/list")
     .then((response) => response.json())
     .then((data) => {
-      tbody.innerHTML = ""
+      tbody.innerHTML = "";
+
+      // Verificación clave para evitar el TypeError
+      if (!Array.isArray(data)) {
+        console.error("La respuesta del servidor no es una lista:", data);
+        throw new Error(data.message || "Error al procesar la respuesta del servidor.");
+      }
+
       data.forEach((order) => {
-        const row = document.createElement("tr")
-        let actionsHtml = ""
-        // Conditional rendering based on status
+        const row = document.createElement("tr");
+        let actionsHtml = "";
         if (order.status === "approved") {
           actionsHtml = `
           <button class="action-btn view-po" data-id="${order.id}" title="Ver"><i class="fas fa-eye"></i></button>
           <button class="action-btn print-po" data-id="${order.id}" title="Imprimir"><i class="fas fa-print"></i></button>
-        `
+        `;
         } else {
-          actionsHtml = `<button class="action-btn view-po" data-id="${order.id}" title="Ver"><i class="fas fa-eye"></i></button>`
+          actionsHtml = `<button class="action-btn view-po" data-id="${order.id}" title="Ver"><i class="fas fa-eye"></i></button>`;
         }
 
         row.innerHTML = `
-        <td>${order.po_number}</td>
-        <td>${formatDate(order.fecha)}</td>
-        <td>${order.proveedor_nombre}</td>
-        <td>${formatCurrency(order.total)}</td>
-        <td>${order.status}</td>
-        <td>
-            ${actionsHtml}
-        </td>
-    `
-        tbody.appendChild(row)
-      })
-      setupPurchaseOrderActions()
+          <td>${order.po_number}</td>
+          <td>${order.fecha}</td>
+          <td>${order.proveedor_nombre}</td>
+          <td>${formatCurrency(order.total)}</td>
+          <td>${order.status}</td>
+          <td>${actionsHtml}</td>
+        `;
+        tbody.appendChild(row);
+      });
+      setupPurchaseOrderActions();
     })
-    .catch((error) => console.error("Error al cargar guías de compra:", error))
+    .catch((error) => {
+        console.error("Error al cargar guías de compra:", error);
+        tbody.innerHTML = `<tr><td colspan="6" class="error-message">Error al cargar guías de compra: ${error.message}</td></tr>`;
+    });
 }
 
 // NEW: Setup Purchase Order Actions (View/Delete for supplier POs)
