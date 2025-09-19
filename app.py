@@ -219,7 +219,7 @@ def calcular_inventario_disenos():
             inventario_dict = {}
             for item in inventario:
                 inventario_dict[item['nombre']] = {
-                    'cantidad': float(item['cantidad']),
+                    'cantidad': float(item['cantidad']) if item['cantidad'] is not None else 0.0,
                     'unidad': item['unidad'],
                     'densidad': float(item['densidad']) if item['densidad'] is not None else 1.0 # Default to 1 if density is null
                 }
@@ -561,14 +561,15 @@ def get_all_quotable_items():
     finally:
         connection.close()
 
-# API para obtener inventario de diseños
 @app.route('/api/inventario/disenos', methods=['GET'])
 def get_inventario_disenos():
     try:
-      resultados = calcular_inventario_disenos()
-      for key, value in resultados.items():
+        resultados = calcular_inventario_disenos()
+        # Directly return the results. This handles empty or populated dicts correctly.
         return jsonify(resultados)
     except Exception as e:
+        # It's helpful to log the error on the server for debugging
+        print(f"Error in get_inventario_disenos: {str(e)}")
         return jsonify({'error': str(e)}), 500
 
 # API para obtener alertas de diseños
