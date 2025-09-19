@@ -1,3 +1,4 @@
+let allSupplierMaterials = {};
 document.addEventListener("DOMContentLoaded", () => {
   // Cargar datos del usuario
   loadUserInfo()
