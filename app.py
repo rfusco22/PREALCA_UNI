@@ -218,10 +218,11 @@ def calcular_inventario_disenos():
             # Convertir inventario a diccionario para fácil acceso
             inventario_dict = {}
             for item in inventario:
+                # Código corregido
                 inventario_dict[item['nombre']] = {
                     'cantidad': float(item['cantidad']) if item['cantidad'] is not None else 0.0,
                     'unidad': item['unidad'],
-                    'densidad': float(item['densidad']) if item['densidad'] is not None else 1.0 # Default to 1 if density is null
+                    'densidad': float(item['densidad']) if item['densidad'] is not None else 1.0
                 }
             
             # Calcular cuántos m³ se pueden producir de cada diseño
