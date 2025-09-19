@@ -3597,7 +3597,7 @@ def get_quotation_by_id(quotation_id):
             cursor.execute(sql_items, (quotation_id,))
             items_db = cursor.fetchall()
             
-            # Serializar la lista de items manualmente
+            # Manually serialize the items list
             items_serializable = []
             for item in items_db:
                 items_serializable.append({
@@ -3610,7 +3610,7 @@ def get_quotation_by_id(quotation_id):
             
             quotation['items'] = items_serializable
 
-            # Serializar los campos numéricos y de fecha del objeto principal
+            # Manually serialize numeric and date fields of the main object
             numeric_fields = ['subtotal', 'exempt_amount', 'taxable_base', 'iva_amount', 'total_amount', 'freight_cost']
             for field in numeric_fields:
                 if quotation.get(field) is not None:
