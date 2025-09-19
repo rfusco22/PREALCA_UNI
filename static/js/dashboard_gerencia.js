@@ -731,7 +731,6 @@ function loadMaintenanceTable(forceRefresh = false) {
     .catch((error) => console.error("Error al cargar mantenimientos:", error))
 }
 
-// Load Registro de Guías de Despacho Table (Gerencia: View Only, no actions column)
 function loadRegistroGuiaDespachoTable(forceRefresh = false) {
   const table = document.getElementById("despachos-registro-table")
   if (!table) return Promise.resolve()
@@ -1366,4 +1365,5 @@ function convertNumberToWords(num) {
   words = words.trim();
   words += ` con ${decimalPart.toString().padStart(2, '0')}/100 BOLÍVARES`;
   return words.toUpperCase();
+
 }
