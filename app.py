@@ -10,6 +10,8 @@ from flask_mail import Mail, Message
 import pymysql
 from werkzeug.utils import secure_filename
 import threading # Import threading for asynchronous email sending
+from sendgrid import SendGridAPIClient
+from sendgrid.helpers.mail import Mail as SendGridMail
 
 app = Flask(__name__, static_folder='static', template_folder='templates')
 
@@ -22,18 +24,22 @@ db_password = "oNGmiCQqYKoKxpjHwBtLGTPnsrUakHyj"
 db_name = "railway"
 db_port = 29138
 
-# Configuración del correo
-app.config['MAIL_SERVER'] = 'smtp.gmail.com'
-app.config['MAIL_PORT'] = 587
-app.config['MAIL_USE_TLS'] = True
-app.config['MAIL_USERNAME'] = 'fuscoriccardo11@gmail.com'
-app.config['MAIL_PASSWORD'] = 'lkzsemizomofjwud'
-mail = Mail(app)
-
-# Helper function to send email asynchronously
 def send_async_email(app, msg):
-    with app.app_context():
-        mail.send(msg)
+    """
+    Esta función usa la clave API desde las variables de entorno para enviar el correo.
+    """
+    message = SendGridMail(
+        from_email='fuscoriccardo11@gmail.com',
+        to_emails=msg.recipients,
+        subject=msg.subject,
+        html_content=msg.html)
+    try:
+        # ✅ Esta línea lee la clave que configuraste en Railway
+        sendgrid_client = SendGridAPIClient(os.environ.get('SENDGRID_API_KEY'))
+        response = sendgrid_client.send(message)
+        print(f"Correo enviado a {msg.recipients[0]}. Estado: {response.status_code}")
+    except Exception as e:
+        print(f"Error al enviar correo con SendGrid: {e}")
 
 # Configuración para subida de archivos
 UPLOAD_FOLDER = 'static/uploads'
