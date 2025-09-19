@@ -1833,7 +1833,7 @@ function setupDespachoForm() {
     e.preventDefault()
 
     const fecha = document.getElementById("fecha_hidden").value
-    const m3 = Number.parseFloat(document.getElementById("m3").value)
+    const m3 = float(document.getElementById("m3").value)
     const disenoId = document.getElementById("diseno").value
     const clienteId = document.getElementById("cliente").value
     const choferId = document.getElementById("chofer").value
@@ -2186,4 +2186,6 @@ function validateSplitPhone(prefixInput, numberInput, messageDivId) {
     }
     setValidationFeedback(numberInput, true, messageDivId, "Teléfono válido.");
     return true;
+}
+
 }
