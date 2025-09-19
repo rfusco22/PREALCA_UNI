@@ -3578,55 +3578,7 @@ def list_quotations():
     finally:
         connection.close()
 
-@app.route('/api/quotations/<int:quotation_id>', methods=['GET'])
-def get_quotation_by_id(quotation_id):
-    if session.get('user_role') not in ['administrador', 'gerencia', 'vendedor']:
-        return jsonify({'success': False, 'message': 'Acceso denegado'}), 403
-
-    connection = get_db_connection()
-    try:
-        with connection.cursor() as cursor:
-            sql_quotation = "SELECT *, include_freight, freight_cost FROM cotizacion WHERE id = %s"
-            cursor.execute(sql_quotation, (quotation_id,))
-            quotation = cursor.fetchone()
-
-            if not quotation:
-                return jsonify({'success': False, 'message': 'Cotización no encontrada'}), 404
-
-            sql_items = "SELECT code, description, quantity, unit_price, item_total FROM cotizacion_items WHERE quotation_id = %s"
-            cursor.execute(sql_items, (quotation_id,))
-            items_db = cursor.fetchall()
-            
-            # Manually serialize the items list
-            items_serializable = []
-            for item in items_db:
-                items_serializable.append({
-                    'code': item['code'],
-                    'description': item['description'],
-                    'quantity': float(item['quantity']) if item['quantity'] is not None else 0.0,
-                    'unit_price': float(item['unit_price']) if item['unit_price'] is not None else 0.0,
-                    'item_total': float(item['item_total']) if item['item_total'] is not None else 0.0,
-                })
-            
-            quotation['items'] = items_serializable
-
-            # Manually serialize numeric and date fields of the main object
-            numeric_fields = ['subtotal', 'exempt_amount', 'taxable_base', 'iva_amount', 'total_amount', 'freight_cost']
-            for field in numeric_fields:
-                if quotation.get(field) is not None:
-                    quotation[field] = float(quotation[field])
-
-            if isinstance(quotation.get('quotation_date'), (datetime, date)):
-                quotation['quotation_date'] = quotation['quotation_date'].strftime('%Y-%m-%d')
-            if isinstance(quotation.get('created_at'), datetime):
-                quotation['created_at'] = quotation['created_at'].strftime('%d/%m/%Y %H:%M:%S')
-
-        return jsonify(quotation)
-    except Exception as e:
-        print(f"Error getting quotation {quotation_id}: {str(e)}")
-        return jsonify({'success': False, 'message': f'Error al obtener cotización: {str(e)}'}), 500
-    finally:
-        connection.close()
+get_quotation_by_id
 
 @app.route('/api/quotations/cancel/<int:quotation_id>', methods=['POST'])
 def cancel_quotation(quotation_id):
