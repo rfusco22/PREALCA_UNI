@@ -1074,60 +1074,74 @@ ROLE_DESCRIPTIONS = {
 
 @app.route('/api/admin/users', methods=['POST'])
 def admin_add_user():
- if session.get('user_role') not in ['sistema']:
-  return jsonify({'success': False, 'message': 'Acceso denegado'}), 403
+    if session.get('user_role') not in ['sistema']:
+        return jsonify({'success': False, 'message': 'Acceso denegado'}), 403
 
- nombre = request.form.get('nombre')
- apellido = request.form.get('apellido')
- documento_type = request.form.get('documento_type')
- documento_number = request.form.get('documento_number')
- cedula = f"{documento_type}-{documento_number}"
- correo = request.form.get('correo')
- contrasena = request.form.get('contrasena')
- rol = request.form.get('rol')
- direccion = request.form.get('direccion')
- 
- telefono_prefix = request.form.get('telefono_prefix')
- telefono_number = request.form.get('telefono_number')
- telefono = request.form.get('telefono')  # Keep for backward compatibility
- 
- # If separate fields are provided, combine them
- if telefono_prefix and telefono_number:
-     telefono = f"{telefono_prefix}{telefono_number}"
- elif not telefono:
-     # If no combined telefono and no separate fields, it's missing
-     telefono = None
+    nombre = request.form.get('nombre')
+    apellido = request.form.get('apellido')
+    documento_type = request.form.get('documento_type')
+    documento_number = request.form.get('documento_number')
+    cedula = f"{documento_type}-{documento_number}"
+    correo = request.form.get('correo')
+    contrasena = request.form.get('contrasena')
+    rol = request.form.get('rol')
+    direccion = request.form.get('direccion')
+    
+    telefono_prefix = request.form.get('telefono_prefix')
+    telefono_number = request.form.get('telefono_number')
+    telefono = request.form.get('telefono')  # Keep for backward compatibility
+    
+    # If separate fields are provided, combine them
+    if telefono_prefix and telefono_number:
+        telefono = f"{telefono_prefix}{telefono_number}"
+    elif not telefono:
+        # If no combined telefono and no separate fields, it's missing
+        telefono = None
 
- # Basic validation
- if not all([nombre, apellido, documento_type, documento_number, correo, contrasena, rol, direccion, telefono]):
+    # Basic validation - check each field individually
+    if not nombre:
+        return jsonify({'success': False, 'message': 'El nombre es obligatorio'}), 400
+    if not apellido:
+        return jsonify({'success': False, 'message': 'El apellido es obligatorio'}), 400
+    if not documento_type:
+        return jsonify({'success': False, 'message': 'El tipo de documento es obligatorio'}), 400
+    if not documento_number:
+        return jsonify({'success': False, 'message': 'El número de documento es obligatorio'}), 400
+    if not correo:
+        return jsonify({'success': False, 'message': 'El correo es obligatorio'}), 400
+    if not contrasena:
+        return jsonify({'success': False, 'message': 'La contraseña es obligatoria'}), 400
+    if not rol:
+        return jsonify({'success': False, 'message': 'El rol es obligatorio'}), 400
+    if not direccion:
+        return jsonify({'success': False, 'message': 'La dirección es obligatoria'}), 400
+    if not telefono:
+        return jsonify({'success': False, 'message': 'El teléfono es obligatorio'}), 400
 
-  missing_fields = [f for f in ['nombre', 'apellido', 'documento_type', 'documento_number', 'correo', 'contrasena', 'rol', 'direccion', 'telefono'] if not request.form.get(f) and not (telefono_prefix and telefono_number)]
-  return jsonify({'success': False, 'message': 'Todos los campos son obligatorios'}), 400
+    # Validate fields
+    is_valid_name, name_message = validate_name(nombre)
+    if not is_valid_name:
+        return jsonify({'success': False, 'message': name_message}), 400
 
- # Validate fields
- is_valid_name, name_message = validate_name(nombre)
- if not is_valid_name:
-  return jsonify({'success': False, 'message': name_message}), 400
+    is_valid_apellido, apellido_message = validate_name(apellido)
+    if not is_valid_apellido:
+        return jsonify({'success': False, 'message': apellido_message}), 400
 
- is_valid_apellido, apellido_message = validate_name(apellido)
- if not is_valid_apellido:
-  return jsonify({'success': False, 'message': apellido_message}), 400
+    is_valid_cedula, cedula_message = validate_venezuelan_cedula(cedula)
+    if not is_valid_cedula:
+        return jsonify({'success': False, 'message': cedula_message}), 400
 
- is_valid_cedula, cedula_message = validate_venezuelan_cedula(cedula)
- if not is_valid_cedula:
-  return jsonify({'success': False, 'message': cedula_message}), 400
+    is_valid_email, email_message = validate_email(correo)
+    if not is_valid_email:
+        return jsonify({'success': False, 'message': email_message}), 400
 
- is_valid_email, email_message = validate_email(correo)
- if not is_valid_email:
-  return jsonify({'success': False, 'message': email_message}), 400
+    is_valid_address, address_message = validate_address(direccion)
+    if not is_valid_address:
+        return jsonify({'success': False, 'message': address_message}), 400
 
- is_valid_address, address_message = validate_address(direccion)
- if not is_valid_address:
-  return jsonify({'success': False, 'message': address_message}), 400
-
- is_valid_phone, phone_message = validate_phone(telefono)
- if not is_valid_phone:
-  return jsonify({'success': False, 'message': phone_message}), 400
+    is_valid_phone, phone_message = validate_phone(telefono)
+    if not is_valid_phone:
+        return jsonify({'success': False, 'message': phone_message}), 400
 
  foto_path = None
  if 'foto' in request.files and request.files['foto'].filename != '':
