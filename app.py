@@ -1135,62 +1135,75 @@ def admin_add_user():
   else:
    return jsonify({'success': False, 'message': 'Tipo de archivo de foto no permitido.'}), 400
 
- connection = None  # 1. Initialize connection to None
-    try:
-        connection = get_db_connection()  # 2. Assign connection inside the try block
-        with connection.cursor() as cursor:
-            # Check if email already exists
-            sql_check = "SELECT id FROM usuarios WHERE correo = %s"
-            cursor.execute(sql_check, (correo,))
-            if cursor.fetchone():
-                return jsonify({'success': False, 'message': 'El correo ya está registrado'}), 409
-            
-            # Check if cedula already exists
-            sql_check_cedula_usuarios = "SELECT id FROM usuarios WHERE cedula = %s"
-            cursor.execute(sql_check_cedula_usuarios, (cedula,))
-            if cursor.fetchone():
-                return jsonify({'success': False, 'message': 'La cédula ya está registrada para otro usuario en el sistema.'}), 409
+ connection = get_db_connection()
+ try:
+  with connection.cursor() as cursor:
+   sql_check = "SELECT id FROM usuarios WHERE correo = %s"
+   cursor.execute(sql_check, (correo,))
+   if cursor.fetchone():
+    return jsonify({'success': False, 'message': 'El correo ya está registrado'}), 409
+   
+   sql_check_cedula_usuarios = "SELECT id FROM usuarios WHERE cedula = %s"
+   cursor.execute(sql_check_cedula_usuarios, (cedula,))
+   if cursor.fetchone():
+    return jsonify({'success': False, 'message': 'La cédula ya está registrada para otro usuario en el sistema.'}), 409
 
-            # Generate tokens
-            reset_token = ''.join(random.choices(string.ascii_letters + string.digits, k=32))
-            reset_token_expiry = datetime.now() + timedelta(hours=24)
+   reset_token = ''.join(random.choices(string.ascii_letters + string.digits, k=32))
+   reset_token_expiry = datetime.now() + timedelta(hours=24)
 
-            # Insert new user
-            sql = """INSERT INTO usuarios (nombre, apellido, cedula, correo, contrasena, rol, foto, verificado, last_active, reset_token, reset_token_expiry, direccion, telefono, status) 
-                    VALUES (%s, %s, %s, %s, %s, %s, %s, 1, NULL, %s, %s, %s, %s, 'active')"""
-            cursor.execute(sql, (nombre, apellido, cedula, correo, contrasena, rol, foto_path, reset_token, reset_token_expiry, direccion, telefono))
-            connection.commit()
+   # MODIFIED: Added status = 'active' to new user insertion
+   sql = """INSERT INTO usuarios (nombre, apellido, cedula, correo, contrasena, rol, foto, verificado, last_active, reset_token, reset_token_expiry, direccion, telefono, status) 
+         VALUES (%s, %s, %s, %s, %s, %s, %s, 1, NULL, %s, %s, %s, %s, 'active')"""
+   cursor.execute(sql, (nombre, apellido, cedula, correo, contrasena, rol, foto_path, reset_token, reset_token_expiry, direccion, telefono))
+   connection.commit()
 
-            # If user is a seller, add to sellers table
-            if rol == 'vendedor':
-                sql_check_cedula_vendedores = "SELECT id FROM vendedores WHERE cedula = %s"
-                cursor.execute(sql_check_cedula_vendedores, (cedula,))
-                if cursor.fetchone():
-                    # This is a rare case, but good to handle. We might rollback the user creation.
-                    connection.rollback()
-                    return jsonify({'success': False, 'message': 'La cédula ya está registrada para otro vendedor.'}), 409
+   if rol == 'vendedor':
+    sql_check_cedula_vendedores = "SELECT id FROM vendedores WHERE cedula = %s"
+    cursor.execute(sql_check_cedula_vendedores, (cedula,))
+    if cursor.fetchone():
+     return jsonify({'success': False, 'message': 'La cédula ya está registrada para otro vendedor.'}), 409
 
-                sql_add_vendedor = """INSERT INTO vendedores (nombre, cedula, telefono, direccion, correo)
-                                    VALUES (%s, %s, %s, %s, %s)"""
-                cursor.execute(sql_add_vendedor, (nombre, cedula, telefono, direccion, correo))
-                connection.commit()
+    sql_add_vendedor = """INSERT INTO vendedores (nombre, cedula, telefono, direccion, correo)
+              VALUES (%s, %s, %s, %s, %s)"""
+    cursor.execute(sql_add_vendedor, (nombre, cedula, telefono, direccion, correo))
+    connection.commit()
 
-            # Send welcome email
-            try:
-                # ... (Keep the entire email sending logic as is) ...
-                pass
-            except Exception as mail_e:
-                return jsonify({'success': True, 'message': 'Usuario agregado exitosamente, pero falló el envío del correo de bienvenida.'})
+   try:
+    user_full_name = f"{nombre} {apellido}"
+    role_description = ROLE_DESCRIPTIONS.get(rol, 'sin descripción específica.')
+    
+    login_url = request.host_url.rstrip('/')
+    reset_password_url = f"{request.host_url}reset_password?token={reset_token}"
 
-        return jsonify({'success': True, 'message': 'Usuario agregado exitosamente'})
-    except Exception as e:
-        if connection:  # 3. Check if connection exists before rollback
-            connection.rollback()
-        # Ensure the error message is always returned as JSON
-        return jsonify({'success': False, 'message': f'Error al agregar usuario: {str(e)}'}), 500
-    finally:
-        if connection:  # 4. Check if connection exists before closing
-            connection.close()
+
+    html_body = render_template(
+     'welcome_email.html',
+     user_name=user_full_name,
+     user_email=correo,
+     user_password=contrasena,
+     user_role_name=rol.capitalize(),
+     role_description=role_description,
+     login_url=login_url,
+     reset_password_url=reset_password_url,
+     current_year=datetime.now().year
+    )
+
+    msg = Message(
+     subject="¡Bienvenido a Prealca! Tu cuenta ha sido creada",
+     sender=app.config['MAIL_USERNAME'],
+     recipients=[correo]
+    )
+    msg.html = html_body
+    mail.send(msg)
+   except Exception as mail_e:
+    return jsonify({'success': True, 'message': 'Usuario agregado exitosamente, pero falló el envío del correo de bienvenida.'})
+
+  return jsonify({'success': True, 'message': 'Usuario agregado exitosamente'})
+ except Exception as e:
+  connection.rollback()
+  return jsonify({'success': False, 'message': f'Error al agregar usuario: {str(e)}'}), 500
+ finally:
+  connection.close()
 
 # API para listar usuarios (para el administrador)
 @app.route('/api/admin/users/list', methods=['GET'])
@@ -1736,41 +1749,11 @@ def get_cliente_by_id(id):
         connection.close()
 
 # --- Global 500 Error Handler (keep this from previous step) ---
-@app.errorhandler(Exception)
-def handle_exception(e):
-    import traceback
-    print(f"Unhandled exception: {str(e)}")
-    print(traceback.format_exc())
-    # Always return JSON for API endpoints
-    if request.path.startswith('/api/'):
-        return jsonify({
-            "success": False, 
-            "error": "Error interno del servidor", 
-            "message": "Ha ocurrido un error inesperado en el servidor."
-        }), 500
-    # For non-API routes, return HTML error page
-    return render_template('error.html', error="Error interno del servidor"), 500
-
-@app.errorhandler(500)
-def handle_internal_error(error):
-    """Global handler for 500 errors to ensure JSON response"""
-    return jsonify({
-        'success': False, 
-        'message': 'Error interno del servidor. Por favor, contacte al administrador.'
-    }), 500
-
 @app.errorhandler(500)
 def internal_server_error(e):
     import traceback
     print(traceback.format_exc())
-    # Always return JSON for API endpoints
-    if request.path.startswith('/api/'):
-        return jsonify({
-            "success": False,
-            "error": "Error interno del servidor", 
-            "message": "Ha ocurrido un error inesperado en el servidor."
-        }), 500
-    return render_template('error.html', error="Error interno del servidor"), 500
+    return jsonify({"error": "Error interno del servidor", "message": "Ha ocurrido un error inesperado en el servidor."}), 500
 
 @app.route('/api/clientes/<int:id>', methods=['POST'])
 def update_cliente_by_id(id):
@@ -2181,7 +2164,7 @@ def get_chofer_by_id(id):
   connection.close()
 
 @app.route('/api/choferes/<int:id>', methods=['POST'])
-def update_chofer_by_id():
+def update_chofer_by_id(id):
     if session.get('user_role') not in ['registro']:
         return jsonify({'success': False, 'message': 'Acceso denegado'}), 403
 
@@ -2342,7 +2325,7 @@ def get_vendedor_by_id(id):
   connection.close()
 
 @app.route('/api/vendedores/<int:id>', methods=['POST'])
-def update_vendedor_by_id():
+def update_vendedor_by_id(id):
     if session.get('user_role') not in ['administrador']: # Removed 'gerencia'
         return jsonify({'success': False, 'message': 'Acceso denegado'}), 403
 
@@ -2397,32 +2380,29 @@ def update_vendedor_by_id():
 
 @app.route('/api/vendedores/delete/<int:id>', methods=['POST'])
 def delete_vendedor_by_id(id):
-    if session.get('user_role') not in ['administrador']:
-        return jsonify({'success': False, 'message': 'Acceso denegado'}), 403
+ if session.get('user_role') not in ['administrador']: # Removed 'gerencia'
+  return jsonify({'success': False, 'message': 'Acceso denegado'}), 403
 
-    connection = get_db_connection()
-    try:
-        # Check if there are clients associated with this seller
-        with connection.cursor() as cursor:
-            sql = "SELECT COUNT(*) as count FROM clientes WHERE vendedor_id = %s"
-            cursor.execute(sql, (id,))
-            result = cursor.fetchone()
-            if result and result['count'] > 0:
-                return jsonify({'success': False, 'message': 'No se puede eliminar el vendedor porque tiene clientes asociados'}), 400
-        
-        # If no clients, delete the seller
-        with connection.cursor() as cursor:
-            sql = "DELETE FROM vendedores WHERE id = %s"
-            cursor.execute(sql, (id,))
-            connection.commit()
-        return jsonify({'success': True, 'message': 'Vendedor eliminado exitosamente'})
-    except Exception as e:
-        if connection:
-            connection.rollback()
-        return jsonify({'success': False, 'message': f'Error al eliminar vendedor: {str(e)}'}), 500
-    finally:
-        if connection:
-            connection.close()
+ connection = get_db_connection()
+ try:
+  # Check if there are clients associated with this seller
+  with connection.cursor() as cursor:
+   sql = "SELECT COUNT(*) as count FROM clientes WHERE vendedor_id = %s"
+   cursor.execute(sql, (id,))
+   result = cursor.fetchone()
+   if result and result['count'] > 0:
+    return jsonify({'success': False, 'message': 'No se puede eliminar el vendedor porque tiene clientes asociados'}), 400
+  
+  # If no clients, delete the seller
+  with connection.cursor() as cursor:
+   sql = "DELETE FROM vendedores WHERE id = %s"
+   cursor.execute(sql, (id,))
+   connection.commit()
+  return jsonify({'success': True, 'message': 'Vendedor eliminado exitosamente'})
+ except Exception as e:
+  return jsonify({'success': False, 'message': f'Error al eliminar vendedor: {str(e)}'}), 500
+ finally:
+  connection.close()
 
 # API para despachos - MODIFICADA PARA USAR DISEÑOS
 @app.route('/api/despachos', methods=['GET'])
@@ -2576,7 +2556,7 @@ def add_despacho():
   connection.close()
 
 @app.route('/api/despachos/<int:dispatch_id>', methods=['GET'])
-def get_despacho_by_id():
+def get_despacho_by_id(dispatch_id):
  connection = get_db_connection()
  try:
   with connection.cursor() as cursor:
@@ -2632,7 +2612,7 @@ def get_despacho_by_id():
   connection.close()
 
 @app.route('/api/despachos/approve/<int:dispatch_id>', methods=['POST'])
-def approve_despacho():
+def approve_despacho(dispatch_id):
  # MODIFIED: Removed 'gerencia' from allowed roles
  if session.get('user_role') not in ['administrador']:
   return jsonify({'success': False, 'message': 'Acceso denegado'}), 403
@@ -2652,7 +2632,7 @@ def approve_despacho():
   connection.close()
 
 @app.route('/api/despachos/deny/<int:dispatch_id>', methods=['POST'])
-def deny_despacho():
+def deny_despacho(dispatch_id):
  # MODIFIED: Removed 'gerencia' from allowed roles
  if session.get('user_role') not in ['administrador']:
   return jsonify({'success': False, 'message': 'Acceso denegado'}), 403
@@ -3035,14 +3015,6 @@ def get_alertas_inventario():
  return jsonify(alertas_disenos)
 
 # NEW: Function to generate expiration alerts (returns list)
-@app.route('/api/alertas/vencimientos', methods=['GET'])
-def get_alertas_vencimientos():
- try:
-  alertas = generar_alertas_vencimientos()
-  return jsonify(alertas)
- except Exception as e:
-  return jsonify({'error': str(e)}), 500
-
 def generar_alertas_vencimientos():
   hoy = datetime.now().date()
   limite = hoy + timedelta(days=90)
@@ -3085,6 +3057,15 @@ def generar_alertas_vencimientos():
     return []
   finally:
     connection.close()
+
+# API para alertas de vencimientos (calls helper function)
+@app.route('/api/alertas/vencimientos', methods=['GET'])
+def get_alertas_vencimientos():
+ try:
+  alertas = generar_alertas_vencimientos()
+  return jsonify(alertas)
+ except Exception as e:
+  return jsonify({'error': str(e)}), 500
 
 def generar_alertas_mantenimiento():
     hoy = datetime.now().date()
@@ -3337,7 +3318,7 @@ def get_purchase_order(order_id):
   return jsonify({'success': False, 'message': f'Error al obtener guía de compra: {str(e)}'}), 500
  finally:
   connection.close()
-     
+
 @app.route('/api/purchase_orders/delete/<int:order_id>', methods=['POST'])
 def delete_purchase_order(order_id):
  if session.get('user_role') not in ['administrador']: # Removed 'gerencia'
@@ -3585,6 +3566,7 @@ def serve_uploads(filename):
     print(f"ERROR: serve_uploads - File not found at: {full_path}")
   return send_from_directory(app.config['UPLOAD_FOLDER'], filename)
 
+# --- API para Proveedores ---
 @app.route('/api/proveedores', methods=['GET'])
 def get_proveedores():
   connection = get_db_connection()
@@ -3598,13 +3580,6 @@ def get_proveedores():
         sql_materiales = "SELECT id, nombre_material, precio, unidad_medida FROM materiales_proveedor WHERE proveedor_id = %s"
         cursor.execute(sql_materiales, (proveedor['id'],))
         proveedor['materiales'] = cursor.fetchall()
-
-        # *** INICIO DE LA CORRECCIÓN ***
-        # Convertir el campo 'precio' de cada material a float
-        for material in proveedor['materiales']:
-            if 'precio' in material and material['precio'] is not None:
-                material['precio'] = float(material['precio'])
-        # *** FIN DE LA CORRECCIÓN ***
 
     return jsonify(proveedores)
   except Exception as e:
@@ -3889,21 +3864,17 @@ def list_ordenes_compra_proveedor():
            cursor.execute(sql)
            orders = cursor.fetchall()
 
+       # Format date for each order
        for order in orders:
            if isinstance(order['fecha'], (datetime, date)):
-               order['fecha'] = order['fecha'].strftime('%d/%m/%Y')
-           # *** INICIO DE LA CORRECCIÓN ***
-           # Convertir el campo 'total' de Decimal a float
-           if 'total' in order and order['total'] is not None:
-               order['total'] = float(order['total'])
-           # *** FIN DE LA CORRECCIÓN ***
+               order['fecha'] = order['fecha'].strftime('%d/%m/%Y') # Changed format
 
        return jsonify(orders)
    except Exception as e:
        print(f"Error al listar órdenes de compra: {str(e)}")
        return jsonify({'success': False, 'message': f'Error al listar órdenes de compra: {str(e)}'}), 500
    finally:
-       connection.close()
+       connection.close() # Ensure connection is closed
 
 @app.route('/api/ordenes_compra_proveedor/<int:order_id>', methods=['GET'])
 def get_orden_compra_proveedor(order_id):
@@ -4060,20 +4031,16 @@ def list_material_requests():
 
            for req in requests:
                if isinstance(req['request_date'], datetime):
-                   req['request_date'] = req['request_date'].strftime('%d/%m/%Y %H:%M:%S')
+                   req['request_date'] = req['request_date'].strftime('%d/%m/%Y %H:%M:%S') # Changed format
                if req['response_date'] and isinstance(req['response_date'], datetime):
-                   req['response_date'] = req['response_date'].strftime('%d/%m/%Y %H:%M:%S')
+                   req['response_date'] = req['response_date'].strftime('%d/%m/%Y %H:%M:%S') # Changed format
                
-               # *** INICIO DE LA CORRECCIÓN ***
-               # Convertir el campo 'quantity_requested' de Decimal a float
-               if 'quantity_requested' in req and req['quantity_requested'] is not None:
-                   req['quantity_requested'] = float(req['quantity_requested'])
-               # *** FIN DE LA CORRECCIÓN ***
-               
+               # Combine requester name and apellido
                req['requester_full_name'] = f"{req['requester_name']} {req['requester_apellido']}"
                del req['requester_name']
                del req['requester_apellido']
 
+               # Combine responder name and apellido if available
                if req['responder_name'] and req['responder_apellido']:
                    req['responder_full_name'] = f"{req['responder_name']} {req['responder_apellido']}"
                else:
@@ -4153,7 +4120,6 @@ def deny_material_request(request_id):
        return jsonify({'success': False, 'message': f'Error al denegar solicitud de material: {str(e)}'}), 500
    finally:
        connection.close()
-
 @app.route('/api/costo_diseno', methods=['GET'])
 def get_costo_diseno():
     if session.get('user_role') not in ['administrador']:
@@ -4162,7 +4128,6 @@ def get_costo_diseno():
     connection = get_db_connection()
     try:
         with connection.cursor() as cursor:
-            # ... (el CREATE TABLE se mantiene igual)
             create_table_sql = """
             CREATE TABLE IF NOT EXISTS concrete_design_precios (
                 id INT AUTO_INCREMENT PRIMARY KEY,
@@ -4176,8 +4141,10 @@ def get_costo_diseno():
             """
             cursor.execute(create_table_sql)
             
+            # Obtener datos de inventario real usando la función existente
             inventario_disenos = calcular_inventario_disenos()
             
+            # Obtener precios unitarios de la tabla concrete_design_precios
             sql = """
             SELECT 
                 cd.id,
@@ -4192,17 +4159,14 @@ def get_costo_diseno():
             cursor.execute(sql)
             disenos = cursor.fetchall()
             
+            # Combinar datos de inventario con precios
             for diseno in disenos:
-                # *** INICIO DE LA CORRECCIÓN ***
-                # Convertir el campo 'precio_unitario' de Decimal a float
-                if 'precio_unitario' in diseno and diseno['precio_unitario'] is not None:
-                    diseno['precio_unitario'] = float(diseno['precio_unitario'])
-                # *** FIN DE LA CORRECCIÓN ***
-
                 design_id = diseno['id']
                 if design_id in inventario_disenos:
+                    # Usar M3 disponible real del inventario
                     diseno['m3_disponible'] = inventario_disenos[design_id]['m3_posibles']
                 else:
+                    # Si no hay datos de inventario, usar 0
                     diseno['m3_disponible'] = 0
             
             return jsonify(disenos)
