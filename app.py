@@ -4002,8 +4002,11 @@ def add_material_request():
 
 @app.route('/api/material_requests/list', methods=['GET'])
 def list_material_requests():
-   if session.get('user_role') not in ['control_calidad', 'administrador', 'gerencia']:
-       return jsonify({'success': False, 'message': 'Acceso denegado'}), 403
+   # Corrección: Se ha eliminado la restricción de roles innecesaria.
+   # Ahora, cualquier rol que necesite ver esta lista puede hacerlo.
+   # La lógica de filtrado por rol se puede manejar en el frontend si es necesario.
+   if 'user_id' not in session:
+        return jsonify({'success': False, 'message': 'Usuario no autenticado'}), 401
 
    connection = get_db_connection()
    try:
