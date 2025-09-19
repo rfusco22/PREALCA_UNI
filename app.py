@@ -10,6 +10,9 @@ from flask_mail import Mail, Message
 import pymysql
 from werkzeug.utils import secure_filename
 import threading # Import threading for asynchronous email sending
+from sendgrid import SendGridAPIClient
+from sendgrid.helpers.mail import Mail as SendGridMail
+from decimal import Decimal # <-- AÑADIDO: Importación del módulo Decimal
 
 app = Flask(__name__, static_folder='static', template_folder='templates')
 
@@ -22,18 +25,22 @@ db_password = "oNGmiCQqYKoKxpjHwBtLGTPnsrUakHyj"
 db_name = "railway"
 db_port = 29138
 
-# Configuración del correo
-app.config['MAIL_SERVER'] = 'smtp.gmail.com'
-app.config['MAIL_PORT'] = 587
-app.config['MAIL_USE_TLS'] = True
-app.config['MAIL_USERNAME'] = 'fuscoriccardo11@gmail.com'
-app.config['MAIL_PASSWORD'] = 'lkzsemizomofjwud'
-mail = Mail(app)
-
-# Helper function to send email asynchronously
 def send_async_email(app, msg):
-    with app.app_context():
-        mail.send(msg)
+    """
+    Esta función usa la clave API desde las variables de entorno para enviar el correo.
+    """
+    message = SendGridMail(
+        from_email='fuscoriccardo11@gmail.com',
+        to_emails=msg.recipients,
+        subject=msg.subject,
+        html_content=msg.html)
+    try:
+        # ✅ Esta línea lee la clave que configuraste en Railway
+        sendgrid_client = SendGridAPIClient(os.environ.get('SENDGRID_API_KEY'))
+        response = sendgrid_client.send(message)
+        print(f"Correo enviado a {msg.recipients[0]}. Estado: {response.status_code}")
+    except Exception as e:
+        print(f"Error al enviar correo con SendGrid: {e}")
 
 # Configuración para subida de archivos
 UPLOAD_FOLDER = 'static/uploads'
@@ -1034,8 +1041,8 @@ def forgot_password():
             current_year=datetime.now().year
         )
         mail.send(msg)
-      except Exception as e:
-        flash(f'Error al enviar correo: {str(e)}', 'error')
+      except Exception as mail_e:
+        flash(f'Error al enviar correo: {str(mail_e)}', 'error')
         return redirect(url_for('forgot_password_page'))
 
       flash('Se han enviado instrucciones a tu correo para recuperar tu contraseña.', 'info')
@@ -1087,9 +1094,6 @@ def reset_password():
       return render_template('reset_password.html', token=token)
     finally:
       connection.close()
-
-  # Renderizar en caso de GET o si falló algún proceso del POST
-  return render_template('reset_password.html', token=token)
 
 
 @app.route('/api/logout', methods=['POST'])
@@ -3601,7 +3605,7 @@ def get_quotation_by_id(quotation_id):
     connection = get_db_connection()
     try:
         with connection.cursor() as cursor:
-            sql_quotation = "SELECT * FROM cotizacion WHERE id = %s"
+            sql_quotation = "SELECT *, include_freight, freight_cost FROM cotizacion WHERE id = %s"
             cursor.execute(sql_quotation, (quotation_id,))
             quotation = cursor.fetchone()
 
@@ -3612,11 +3616,22 @@ def get_quotation_by_id(quotation_id):
             cursor.execute(sql_items, (quotation_id,))
             items = cursor.fetchall()
             
+            # Convert Decimal types in the quotation dictionary
+            for key in quotation:
+                if isinstance(quotation[key], Decimal):
+                    quotation[key] = float(quotation[key])
+
+            # Convert Decimal types in the items list
+            for item in items:
+                for key in item:
+                    if isinstance(item[key], Decimal):
+                        item[key] = float(item[key])
+
             quotation['items'] = items
             if isinstance(quotation['quotation_date'], (datetime, date)):
-                quotation['quotation_date'] = quotation['quotation_date'].strftime('%d/%m/%Y') # Changed format
+                quotation['quotation_date'] = quotation['quotation_date'].strftime('%Y-%m-%d')
             if isinstance(quotation['created_at'], datetime):
-                quotation['created_at'] = quotation['created_at'].strftime('%d/%m/%Y %H:%M:%S') # Changed format
+                quotation['created_at'] = quotation['created_at'].strftime('%d/%m/%Y %H:%M:%S')
 
         return jsonify(quotation)
     except Exception as e:
