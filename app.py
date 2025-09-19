@@ -4012,11 +4012,8 @@ def add_material_request():
 
 @app.route('/api/material_requests/list', methods=['GET'])
 def list_material_requests():
-   # Corrección: Se ha eliminado la restricción de roles innecesaria.
-   # Ahora, cualquier rol que necesite ver esta lista puede hacerlo.
-   # La lógica de filtrado por rol se puede manejar en el frontend si es necesario.
-   if 'user_id' not in session:
-        return jsonify({'success': False, 'message': 'Usuario no autenticado'}), 401
+   if session.get('user_role') not in ['control_calidad', 'administrador', 'gerencia']:
+       return jsonify({'success': False, 'message': 'Acceso denegado'}), 403
 
    connection = get_db_connection()
    try:
@@ -4044,16 +4041,20 @@ def list_material_requests():
 
            for req in requests:
                if isinstance(req['request_date'], datetime):
-                   req['request_date'] = req['request_date'].strftime('%d/%m/%Y %H:%M:%S') # Changed format
+                   req['request_date'] = req['request_date'].strftime('%d/%m/%Y %H:%M:%S')
                if req['response_date'] and isinstance(req['response_date'], datetime):
-                   req['response_date'] = req['response_date'].strftime('%d/%m/%Y %H:%M:%S') # Changed format
+                   req['response_date'] = req['response_date'].strftime('%d/%m/%Y %H:%M:%S')
                
-               # Combine requester name and apellido
+               # *** INICIO DE LA CORRECCIÓN ***
+               # Convertir el campo 'quantity_requested' de Decimal a float
+               if 'quantity_requested' in req and req['quantity_requested'] is not None:
+                   req['quantity_requested'] = float(req['quantity_requested'])
+               # *** FIN DE LA CORRECCIÓN ***
+               
                req['requester_full_name'] = f"{req['requester_name']} {req['requester_apellido']}"
                del req['requester_name']
                del req['requester_apellido']
 
-               # Combine responder name and apellido if available
                if req['responder_name'] and req['responder_apellido']:
                    req['responder_full_name'] = f"{req['responder_name']} {req['responder_apellido']}"
                else:
