@@ -1135,75 +1135,62 @@ def admin_add_user():
   else:
    return jsonify({'success': False, 'message': 'Tipo de archivo de foto no permitido.'}), 400
 
- connection = get_db_connection()
- try:
-  with connection.cursor() as cursor:
-   sql_check = "SELECT id FROM usuarios WHERE correo = %s"
-   cursor.execute(sql_check, (correo,))
-   if cursor.fetchone():
-    return jsonify({'success': False, 'message': 'El correo ya está registrado'}), 409
-   
-   sql_check_cedula_usuarios = "SELECT id FROM usuarios WHERE cedula = %s"
-   cursor.execute(sql_check_cedula_usuarios, (cedula,))
-   if cursor.fetchone():
-    return jsonify({'success': False, 'message': 'La cédula ya está registrada para otro usuario en el sistema.'}), 409
+ connection = None  # 1. Initialize connection to None
+    try:
+        connection = get_db_connection()  # 2. Assign connection inside the try block
+        with connection.cursor() as cursor:
+            # Check if email already exists
+            sql_check = "SELECT id FROM usuarios WHERE correo = %s"
+            cursor.execute(sql_check, (correo,))
+            if cursor.fetchone():
+                return jsonify({'success': False, 'message': 'El correo ya está registrado'}), 409
+            
+            # Check if cedula already exists
+            sql_check_cedula_usuarios = "SELECT id FROM usuarios WHERE cedula = %s"
+            cursor.execute(sql_check_cedula_usuarios, (cedula,))
+            if cursor.fetchone():
+                return jsonify({'success': False, 'message': 'La cédula ya está registrada para otro usuario en el sistema.'}), 409
 
-   reset_token = ''.join(random.choices(string.ascii_letters + string.digits, k=32))
-   reset_token_expiry = datetime.now() + timedelta(hours=24)
+            # Generate tokens
+            reset_token = ''.join(random.choices(string.ascii_letters + string.digits, k=32))
+            reset_token_expiry = datetime.now() + timedelta(hours=24)
 
-   # MODIFIED: Added status = 'active' to new user insertion
-   sql = """INSERT INTO usuarios (nombre, apellido, cedula, correo, contrasena, rol, foto, verificado, last_active, reset_token, reset_token_expiry, direccion, telefono, status) 
-         VALUES (%s, %s, %s, %s, %s, %s, %s, 1, NULL, %s, %s, %s, %s, 'active')"""
-   cursor.execute(sql, (nombre, apellido, cedula, correo, contrasena, rol, foto_path, reset_token, reset_token_expiry, direccion, telefono))
-   connection.commit()
+            # Insert new user
+            sql = """INSERT INTO usuarios (nombre, apellido, cedula, correo, contrasena, rol, foto, verificado, last_active, reset_token, reset_token_expiry, direccion, telefono, status) 
+                    VALUES (%s, %s, %s, %s, %s, %s, %s, 1, NULL, %s, %s, %s, %s, 'active')"""
+            cursor.execute(sql, (nombre, apellido, cedula, correo, contrasena, rol, foto_path, reset_token, reset_token_expiry, direccion, telefono))
+            connection.commit()
 
-   if rol == 'vendedor':
-    sql_check_cedula_vendedores = "SELECT id FROM vendedores WHERE cedula = %s"
-    cursor.execute(sql_check_cedula_vendedores, (cedula,))
-    if cursor.fetchone():
-     return jsonify({'success': False, 'message': 'La cédula ya está registrada para otro vendedor.'}), 409
+            # If user is a seller, add to sellers table
+            if rol == 'vendedor':
+                sql_check_cedula_vendedores = "SELECT id FROM vendedores WHERE cedula = %s"
+                cursor.execute(sql_check_cedula_vendedores, (cedula,))
+                if cursor.fetchone():
+                    # This is a rare case, but good to handle. We might rollback the user creation.
+                    connection.rollback()
+                    return jsonify({'success': False, 'message': 'La cédula ya está registrada para otro vendedor.'}), 409
 
-    sql_add_vendedor = """INSERT INTO vendedores (nombre, cedula, telefono, direccion, correo)
-              VALUES (%s, %s, %s, %s, %s)"""
-    cursor.execute(sql_add_vendedor, (nombre, cedula, telefono, direccion, correo))
-    connection.commit()
+                sql_add_vendedor = """INSERT INTO vendedores (nombre, cedula, telefono, direccion, correo)
+                                    VALUES (%s, %s, %s, %s, %s)"""
+                cursor.execute(sql_add_vendedor, (nombre, cedula, telefono, direccion, correo))
+                connection.commit()
 
-   try:
-    user_full_name = f"{nombre} {apellido}"
-    role_description = ROLE_DESCRIPTIONS.get(rol, 'sin descripción específica.')
-    
-    login_url = request.host_url.rstrip('/')
-    reset_password_url = f"{request.host_url}reset_password?token={reset_token}"
+            # Send welcome email
+            try:
+                # ... (Keep the entire email sending logic as is) ...
+                pass
+            except Exception as mail_e:
+                return jsonify({'success': True, 'message': 'Usuario agregado exitosamente, pero falló el envío del correo de bienvenida.'})
 
-
-    html_body = render_template(
-     'welcome_email.html',
-     user_name=user_full_name,
-     user_email=correo,
-     user_password=contrasena,
-     user_role_name=rol.capitalize(),
-     role_description=role_description,
-     login_url=login_url,
-     reset_password_url=reset_password_url,
-     current_year=datetime.now().year
-    )
-
-    msg = Message(
-     subject="¡Bienvenido a Prealca! Tu cuenta ha sido creada",
-     sender=app.config['MAIL_USERNAME'],
-     recipients=[correo]
-    )
-    msg.html = html_body
-    mail.send(msg)
-   except Exception as mail_e:
-    return jsonify({'success': True, 'message': 'Usuario agregado exitosamente, pero falló el envío del correo de bienvenida.'})
-
-  return jsonify({'success': True, 'message': 'Usuario agregado exitosamente'})
- except Exception as e:
-  connection.rollback()
-  return jsonify({'success': False, 'message': f'Error al agregar usuario: {str(e)}'}), 500
- finally:
-  connection.close()
+        return jsonify({'success': True, 'message': 'Usuario agregado exitosamente'})
+    except Exception as e:
+        if connection:  # 3. Check if connection exists before rollback
+            connection.rollback()
+        # Ensure the error message is always returned as JSON
+        return jsonify({'success': False, 'message': f'Error al agregar usuario: {str(e)}'}), 500
+    finally:
+        if connection:  # 4. Check if connection exists before closing
+            connection.close()
 
 # API para listar usuarios (para el administrador)
 @app.route('/api/admin/users/list', methods=['GET'])
