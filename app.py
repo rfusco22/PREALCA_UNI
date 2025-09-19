@@ -27,7 +27,11 @@ app.config['MAIL_SERVER'] = 'smtp.gmail.com'
 app.config['MAIL_PORT'] = 587
 app.config['MAIL_USE_TLS'] = True
 app.config['MAIL_USERNAME'] = 'fuscoriccardo11@gmail.com'
+# --- INICIO DE LA CORRECCIÓN ---
+# REEMPLAZA tu contraseña actual por la contraseña de aplicación de 16 caracteres
+# Asegúrate de no incluir espacios.
 app.config['MAIL_PASSWORD'] = 'fsqa yqdg dxgh smlo'
+# --- FIN DE LA CORRECCIÓN ---
 mail = Mail(app)
 
 # Helper function to send email asynchronously
