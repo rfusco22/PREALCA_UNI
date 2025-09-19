@@ -258,32 +258,38 @@ function loadCamionesForSelect() {
   fetch("/api/camiones")
     .then((response) => response.json())
     .then((data) => {
-      const camionSelect = document.getElementById("camion_mantenimiento")
-      const camionEditSelect = document.getElementById("camion_mantenimiento_edit")
+
+      if (!Array.isArray(data)) {
+        console.error("La respuesta del servidor para el selector de camiones no es una lista:", data);
+        return; // Detiene la ejecución si no es un array
+      }
+
+      const camionSelect = document.getElementById("camion_mantenimiento");
+      const camionEditSelect = document.getElementById("camion_mantenimiento_edit");
 
       if (camionSelect) {
-        camionSelect.innerHTML = '<option value="">Seleccione camión</option>'
+        camionSelect.innerHTML = '<option value="">Seleccione camión</option>';
         data.forEach((camion) => {
-          const option = document.createElement("option")
-          option.value = camion.id
-          option.textContent = `${camion.placa} - ${camion.modelo}`
-          option.setAttribute("data-odometer", camion.current_odometer || 0)
-          camionSelect.appendChild(option)
-        })
+          const option = document.createElement("option");
+          option.value = camion.id;
+          option.textContent = `${camion.placa} - ${camion.modelo}`;
+          option.setAttribute("data-odometer", camion.current_odometer || 0);
+          camionSelect.appendChild(option);
+        });
       }
 
       if (camionEditSelect) {
-        camionEditSelect.innerHTML = '<option value="">Seleccione camión</option>'
+        camionEditSelect.innerHTML = '<option value="">Seleccione camión</option>';
         data.forEach((camion) => {
-          const option = document.createElement("option")
-          option.value = camion.id
-          option.textContent = `${camion.placa} - ${camion.modelo}`
-          option.setAttribute("data-odometer", camion.current_odometer || 0)
-          camionEditSelect.appendChild(option)
-        })
+          const option = document.createElement("option");
+          option.value = camion.id;
+          option.textContent = `${camion.placa} - ${camion.modelo}`;
+          option.setAttribute("data-odometer", camion.current_odometer || 0);
+          camionEditSelect.appendChild(option);
+        });
       }
     })
-    .catch((error) => console.error("Error al cargar camiones:", error))
+    .catch((error) => console.error("Error al cargar camiones para el selector:", error));
 }
 
 function loadClientesTable() {
